@@ -507,25 +507,18 @@ app = FastAPI(
 # IMPORTANT: Register AFTER creating the FastAPI application.
 # -----------------------------------------------------------------------------
 
+
 app.add_middleware(
-
     CORSMiddleware,
-
     allow_origins=[
-
         "http://localhost:4173",
-
         "http://127.0.0.1:4173",
-
         "http://localhost:5173",
-
         "http://127.0.0.1:5173",
+        "https://remind-me-two-gold.vercel.app",
     ],
-
     allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"],
 )
 
