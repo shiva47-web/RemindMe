@@ -12,7 +12,7 @@ import {
 
 import "./AuthGate.css";
 
-const API_URL = "https://remindme-api-6sfw.onrender.com";
+const API_URL = import.meta.env.VITE_API_URL;
 const TOKEN_KEY = "remindme_access_token";
 const USER_KEY = "remindme_user";
 
