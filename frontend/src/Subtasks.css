@@ -1,0 +1,96 @@
+/* SUBTASKS - compact panel inside each reminder card */
+.subtasks-panel {
+  width: 100%;
+  margin-top: 12px;
+  color: #d8d5e2;
+}
+
+.subtasks-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  list-style: none;
+  cursor: pointer;
+  color: #bca7f5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subtasks-summary::-webkit-details-marker {
+  display: none;
+}
+
+.subtasks-summary-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.subtasks-chevron {
+  transition: transform 0.2s ease;
+}
+
+.subtasks-panel[open] .subtasks-chevron {
+  transform: rotate(180deg);
+}
+
+.subtasks-summary-count {
+  color: #858293;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.subtasks-content {
+  padding: 12px 0 2px;
+}
+
+.subtasks-loading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 0 10px;
+  color: #9693a4;
+  font-size: 11px;
+}
+
+.subtasks-spinner {
+  animation: subtasks-spin 0.9s linear infinite;
+}
+
+@keyframes subtasks-spin {
+  to { transform: rotate(360deg); }
+}
+
+.subtasks-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid #663e4b;
+  border-radius: 8px;
+  background: #34212a;
+  color: #ffb1bb;
+  font-size: 10px;
+}
+
+.subtasks-error button {
+  border: 0;
+  background: transparent;
+  color: #d8bdff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.subtasks-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #858293;
+  font-size: 9px;
+}

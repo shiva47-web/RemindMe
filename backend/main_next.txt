@@ -1,0 +1,180 @@
+
+# PUBLIC VAPID KEY
+
+@app.get("/api/vapid-public-key")
+def get_vapid_public_key():
+
+    if not VAPID_PUBLIC_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="VAPID public key is missing.",
+        )
+
+    return {
+        "publicKey": VAPID_PUBLIC_KEY,
+    }
+
+
+# SAVE PUSH SUBSCRIPTION
+
+@app.post("/api/subscribe")
+def subscribe(request: PushSubscriptionRequest):
+
+    with SessionLocal() as session:
+
+        existing = session.get(
+            PushSubscriptionDB,
+            request.endpoint
+        )
+
+        if existing:
+
+            existing.p256dh = request.keys["p256dh"]
+            existing.auth = request.keys["auth"]
+
+        else:
+
+            session.add(
+                PushSubscriptionDB(
+                    endpoint=request.endpoint,
+                    p256dh=request.keys["p256dh"],
+                    auth=request.keys["auth"],
+                )
+            )
+
+        session.commit()
+
+        count = session.scalar(
+            select(func.count()).select_from(
+                PushSubscriptionDB
+            )
+        )
+
+    return {
+        "message": "Push subscription saved!",
+        "total": count,
+    }
+
+
+# TEST PUSH NOTIFICATION
+
+@app.post("/api/test-push")
+def test_push(request: TestPushRequest):
+
+    with SessionLocal() as session:
+
+        subscription = session.get(
+            PushSubscriptionDB,
+            request.endpoint
+        )
+
+        if not subscription:
+            raise HTTPException(
+                status_code=404,
+                detail="Push subscription not found.",
+            )
+
+        try:
+
+            send_push(
+                subscription,
+                {
+                    "title": "RemindMe Test Notification",
+                    "body": "PostgreSQL-backed push notifications are working!",
+                    "tag": "remindme-test",
+                    "url": "/",
+                }
+            )
+
+            return {
+                "message": "Test push notification sent successfully!"
+            }
+
+        except WebPushException as error:
+
+            response = getattr(error, "response", None)
+
+            status = (
+                response.status_code
+                if response is not None
+                else None
+            )
+
+            logger.exception("Test push failed.")
+
+            if status in (404, 410):
+                session.delete(subscription)
+                session.commit()
+
+            raise HTTPException(
+                status_code=502,
+                detail=f"Push delivery failed: HTTP {status}",
+            )
+
+
+# SYNCHRONIZE REMINDERS FROM FRONTEND
+
+@app.post("/api/reminders/sync")
+def sync_reminders(request: ReminderSyncRequest):
+
+    try:
+        ZoneInfo(request.timezone)
+
+    except ZoneInfoNotFoundError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid browser timezone.",
+        )
+
+    clean_reminders = request.reminders
+
+    # Do not accidentally erase the entire database.
+    if not clean_reminders:
+
+        with SessionLocal() as session:
+
+            existing_count = session.scalar(
+                select(func.count()).select_from(Reminder)
+            )
+
+            if existing_count:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Empty synchronization rejected to protect saved reminders.",
+                )
+
+    incoming_ids = set()
+
+    with SessionLocal() as session:
+
+        old_reminders = {
+            str(task.id): task
+            for task in session.scalars(
+                select(Reminder)
+            ).all()
+        }
+
+        # Save or update reminders.
+        for item in clean_reminders:
+
+            try:
+
+                task_id = str(item["id"])
+
+                reminder_date = date.fromisoformat(
+                    str(item["date"])
+                )
+
+                raw_time = item.get("time")
+
+                reminder_time = (
+                    time.fromisoformat(str(raw_time))
+                    if raw_time
+                    else None
+                )
+
+                completed_dates = item.get(
+                    "completedDates",
+                    []
+                )
+

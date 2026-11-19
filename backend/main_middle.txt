@@ -1,0 +1,180 @@
+            )
+
+            already_sent = session.get(
+                SentOccurrence,
+                occurrence_key
+            )
+
+            if already_sent:
+                continue
+
+            due_at = datetime.combine(
+                today,
+                task.time,
+                tzinfo=timezone
+            )
+
+            if now < due_at:
+                continue
+
+            payload = {
+                "title": f"Reminder: {task.title}",
+                "body": (
+                    task.description
+                    or f"{task.category} reminder is due now!"
+                ),
+                "tag": f"remindme-{task.id}-{today.isoformat()}",
+                "url": "/",
+            }
+
+            successful_deliveries = 0
+            stale_endpoints = []
+
+            for subscription in all_subscriptions:
+
+                try:
+                    await asyncio.to_thread(
+                        send_push,
+                        subscription,
+                        payload
+                    )
+
+                    successful_deliveries += 1
+
+                except WebPushException as error:
+
+                    response = getattr(error, "response", None)
+
+                    status = (
+                        response.status_code
+                        if response is not None
+                        else None
+                    )
+
+                    logger.error(
+                        "Push failed for reminder %s: HTTP %s",
+                        task.id,
+                        status
+                    )
+
+                    if status in (404, 410):
+                        stale_endpoints.append(
+                            subscription.endpoint
+                        )
+
+                except Exception:
+                    logger.exception(
+                        "Unexpected push error for reminder %s",
+                        task.id
+                    )
+
+            # Remove expired subscriptions.
+            for endpoint in stale_endpoints:
+
+                subscription = session.get(
+                    PushSubscriptionDB,
+                    endpoint
+                )
+
+                if subscription:
+                    session.delete(subscription)
+
+            # Record delivery only if at least one push succeeded.
+            if successful_deliveries > 0:
+
+                session.add(
+                    SentOccurrence(
+                        occurrence_key=occurrence_key,
+                        task_id=str(task.id),
+                        occurrence_date=today,
+                    )
+                )
+
+                session.commit()
+
+                logger.info(
+                    "Reminder %s sent for %s",
+                    task.id,
+                    today
+                )
+
+
+async def scheduler_loop():
+
+    logger.info(
+        "RemindMe PostgreSQL scheduler started."
+    )
+
+    while True:
+
+        try:
+            await check_due_reminders()
+
+        except asyncio.CancelledError:
+            raise
+
+        except Exception:
+            logger.exception(
+                "Scheduler execution failed."
+            )
+
+        await asyncio.sleep(CHECK_INTERVAL)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    # Create tables if they do not exist.
+    Base.metadata.create_all(bind=engine)
+
+    scheduler_task = asyncio.create_task(
+        scheduler_loop()
+    )
+
+    try:
+        yield
+
+    finally:
+        scheduler_task.cancel()
+
+        try:
+            await scheduler_task
+
+        except asyncio.CancelledError:
+            pass
+
+        logger.info("Scheduler stopped.")
+
+
+# FASTAPI APPLICATION
+
+app = FastAPI(
+    title="RemindMe API",
+    description="PostgreSQL-backed reminder and push notification service",
+    version="2.0.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:4173",
+        "http://localhost:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# HOME
+
+@app.get("/")
+def home():
+
+    return {
+        "message": "RemindMe Backend is running!",
+        "database": "PostgreSQL",
+        "scheduler": "active",
+    }
+

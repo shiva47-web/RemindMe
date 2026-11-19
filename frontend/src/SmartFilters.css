@@ -1,0 +1,107 @@
+/* SMART SEARCH AND FILTERS */
+
+.reminder-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(150, 140, 190, 0.12);
+}
+
+.reminder-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 200px;
+  min-width: 180px;
+  padding: 10px 13px;
+  border: 1px solid rgba(160, 150, 200, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: #aaa0de;
+}
+
+.reminder-search-field:focus-within {
+  border-color: #9582ed;
+  box-shadow: 0 0 0 3px rgba(149, 130, 237, 0.1);
+}
+
+.reminder-search-field input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.reminder-search-field input::placeholder {
+  color: #858397;
+}
+
+.reminder-search-field input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.reminder-filter-bar select,
+.reminder-filter-bar > input[type="date"] {
+  min-width: 125px;
+  max-width: 100%;
+  padding: 10px 11px;
+  border: 1px solid rgba(160, 150, 200, 0.2);
+  border-radius: 10px;
+  outline: none;
+  background: #202135;
+  color: #d9d6ed;
+  font: inherit;
+  font-size: 12px;
+}
+
+.reminder-filter-bar select:focus,
+.reminder-filter-bar > input[type="date"]:focus {
+  border-color: #9582ed;
+}
+
+.reminder-filter-bar input[type="date"] {
+  color-scheme: dark;
+}
+
+.clear-reminder-filters {
+  padding: 10px 13px;
+  border: 1px solid rgba(180, 150, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(145, 120, 230, 0.1);
+  color: #b6a6ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.clear-reminder-filters:hover {
+  background: rgba(145, 120, 230, 0.2);
+  border-color: #9582ed;
+}
+
+@media (max-width: 700px) {
+  .reminder-filter-bar {
+    align-items: stretch;
+  }
+
+  .reminder-search-field {
+    flex-basis: 100%;
+  }
+
+  .reminder-filter-bar select,
+  .reminder-filter-bar > input[type="date"] {
+    flex: 1 1 135px;
+  }
+
+  .clear-reminder-filters {
+    flex: 1 1 100%;
+  }
+}

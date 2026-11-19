@@ -1,0 +1,54 @@
+[
+  {
+    "id": 1,
+    "title": "Complete DBMS assignment",
+    "description": "Finish the database assignment.",
+    "category": "Study",
+    "date": "2026-11-02",
+    "time": "09:00",
+    "priority": "High",
+    "done": false
+  },
+  {
+    "id": 2,
+    "title": "Prepare project presentation",
+    "description": "Prepare slides for the project.",
+    "category": "Work",
+    "date": "2026-11-02",
+    "time": "11:30",
+    "priority": "Medium",
+    "done": false
+  },
+  {
+    "id": 3,
+    "title": "Buy groceries",
+    "description": "Purchase household essentials.",
+    "category": "Personal",
+    "date": "2026-11-02",
+    "time": "16:00",
+    "priority": "Low",
+    "done": true
+  },
+  {
+    "id": 4,
+    "title": "Revise Computer Networks",
+    "description": "Revise important networking concepts.",
+    "category": "Study",
+    "date": "2026-11-02",
+    "time": "18:00",
+    "priority": "High",
+    "done": false
+  },
+  {
+    "id": 1793722531996,
+    "title": "Background Push Test",
+    "description": "Testing background notifications",
+    "date": "2026-11-03",
+    "time": "21:47",
+    "category": "Personal",
+    "priority": "High",
+    "repeat": "none",
+    "done": false,
+    "completedDates": []
+  }
+]

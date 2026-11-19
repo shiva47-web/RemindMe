@@ -1,0 +1,211 @@
+.attachment-panel {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.attachment-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  list-style: none;
+}
+
+.attachment-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.attachment-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c1adff;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.attachment-count {
+  min-width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(166, 138, 250, 0.13);
+  color: #d1c3ff;
+  font-size: 10px;
+}
+
+.attachment-chevron {
+  color: #9792a8;
+  transition: transform 0.2s ease;
+}
+
+.attachment-panel[open] .attachment-chevron {
+  transform: rotate(180deg);
+}
+
+.attachment-content {
+  padding-top: 12px;
+  animation: attachmentAppear 0.2s ease;
+}
+
+@keyframes attachmentAppear {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attachment-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aaa7b8;
+  font-size: 11px;
+  padding: 10px 0;
+}
+
+.attachment-empty {
+  color: #9290a2;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 4px 0 12px;
+}
+
+.attachment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid #343340;
+  border-radius: 10px;
+  background: #20212b;
+}
+
+.attachment-file-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(166, 138, 250, 0.12);
+  color: #bba5ff;
+}
+
+.attachment-file-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attachment-file-details strong {
+  color: #eeeafc;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-file-details span {
+  color: #9290a2;
+  font-size: 10px;
+}
+
+.attachment-action {
+  width: 29px;
+  height: 29px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 7px;
+  background: #30303d;
+  color: #c3b4ef;
+  cursor: pointer;
+}
+
+.attachment-action:hover {
+  background: #414052;
+  color: white;
+}
+
+.attachment-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.attachment-delete {
+  color: #ed929c;
+}
+
+.attachment-delete:hover {
+  background: rgba(237, 100, 120, 0.15);
+  color: #ff9eaa;
+}
+
+.attachment-upload {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 9px 13px;
+  border: 1px dashed rgba(166, 138, 250, 0.5);
+  border-radius: 9px;
+  background: rgba(166, 138, 250, 0.08);
+  color: #c8b5ff;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.attachment-upload:hover {
+  border-color: #a68afa;
+  background: rgba(166, 138, 250, 0.16);
+}
+
+.attachment-upload.uploading {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.attachment-hint {
+  margin: 7px 0 0;
+  color: #777587;
+  font-size: 9px;
+}
+
+.attachment-error {
+  margin: 9px 0;
+  color: #ff929d;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.attachment-spinner {
+  animation: attachmentSpin 0.9s linear infinite;
+}
+
+@keyframes attachmentSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
