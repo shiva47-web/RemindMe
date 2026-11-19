@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Bell, BellRing } from "lucide-react";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://remindme-api-6sfw.onrender.com";
 const TOKEN_KEY = "remindme_access_token";
 
 function urlBase64ToUint8Array(base64String) {
