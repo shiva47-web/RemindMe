@@ -16,7 +16,9 @@ from pywebpush import webpush, WebPushException
 from share_models import ReminderShare
 from share_routes import router as share_router
 from sqlalchemy import delete, func, select
-
+import base64
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from attachment_models import ReminderAttachment
 from attachment_routes import (
     UPLOAD_DIRECTORY,
@@ -57,10 +59,50 @@ VAPID_PUBLIC_KEY = os.getenv(
     "VAPID_PUBLIC_KEY", ""
 ).strip()
 
-VAPID_PRIVATE_KEY = BASE_DIR / os.getenv(
-    "VAPID_PRIVATE_KEY", "private_key.pem"
-)
+# Read the raw Base64URL private key from Render.
+VAPID_PRIVATE_KEY_VALUE = os.getenv(
+    "VAPID_PRIVATE_KEY", ""
+).strip()
 
+# Convert the raw VAPID private key into a PEM file.
+VAPID_PRIVATE_KEY = Path("/tmp/remindme_vapid_private.pem")
+
+if VAPID_PRIVATE_KEY_VALUE:
+    try:
+        private_bytes = base64.urlsafe_b64decode(
+            VAPID_PRIVATE_KEY_VALUE
+            + "=" * (-len(VAPID_PRIVATE_KEY_VALUE) % 4)
+        )
+
+        if len(private_bytes) != 32:
+            raise ValueError("Invalid VAPID private key length.")
+
+        private_key = ec.derive_private_key(
+            int.from_bytes(private_bytes, "big"),
+            ec.SECP256R1(),
+        )
+
+        pem_data = private_key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+
+        VAPID_PRIVATE_KEY.write_bytes(pem_data)
+
+        logger.info("VAPID private key loaded successfully.")
+
+    except Exception:
+        logger.exception("Could not load VAPID private key.")
+        raise
+
+else:
+    logger.error("VAPID_PRIVATE_KEY environment variable is missing.")
+
+VAPID_SUBJECT = os.getenv(
+    "VAPID_SUBJECT",
+    "mailto:admin@example.com"
+)
 VAPID_SUBJECT = os.getenv(
     "VAPID_SUBJECT", "mailto:admin@example.com"
 )
