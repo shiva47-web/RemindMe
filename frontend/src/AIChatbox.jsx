@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -11,6 +12,21 @@ import {
 
 import "./AIChatbox.css";
 
+// =====================================================
+// REMY API CONFIGURATION
+// =====================================================
+
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://remindme-api-6sfw.onrender.com"
+).replace(/\/+$/, "");
+
+const CHAT_ENDPOINT = `${API_URL}/api/ai/chat`;
+
+// =====================================================
+// WELCOME MESSAGE
+// =====================================================
+
 const WELCOME_MESSAGE = {
   id: "welcome",
   role: "assistant",
@@ -19,12 +35,20 @@ const WELCOME_MESSAGE = {
   localOnly: true,
 };
 
+// =====================================================
+// STARTER PROMPTS
+// =====================================================
+
 const STARTER_PROMPTS = [
   "What are my reminders?",
   "Help me plan my day",
   "Create a study timetable",
   "How can I improve my productivity?",
 ];
+
+// =====================================================
+// MESSAGE CREATOR
+// =====================================================
 
 function createMessage(role, content) {
   return {
@@ -34,20 +58,25 @@ function createMessage(role, content) {
   };
 }
 
+// =====================================================
+// REMY CHATBOX COMPONENT
+// =====================================================
+
 export default function AIChatbox() {
   const [isOpen, setIsOpen] = useState(false);
-
   const [messages, setMessages] = useState([
     WELCOME_MESSAGE,
   ]);
-
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Open Remy using the left sidebar card.
+  // ===================================================
+  // OPEN REMY
+  // ===================================================
+
   useEffect(() => {
     const openRemy = () => setIsOpen(true);
 
@@ -58,7 +87,10 @@ export default function AIChatbox() {
     };
   }, []);
 
-  // Automatically scroll to the latest message.
+  // ===================================================
+  // AUTO SCROLL
+  // ===================================================
+
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({
@@ -68,7 +100,10 @@ export default function AIChatbox() {
     }
   }, [messages, isLoading, isOpen]);
 
-  // Focus input when chat opens.
+  // ===================================================
+  // AUTO FOCUS
+  // ===================================================
+
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
@@ -79,12 +114,16 @@ export default function AIChatbox() {
     }
   }, [isOpen]);
 
-  // Send message to local Remy AI.
+  // ===================================================
+  // SEND MESSAGE TO REMY
+  // ===================================================
+
   const sendMessage = async (text) => {
     const messageText = text.trim();
 
     if (!messageText || isLoading) return;
 
+    // Get authentication token
     const token = localStorage.getItem(
       "remindme_access_token"
     );
@@ -97,9 +136,11 @@ export default function AIChatbox() {
           "Your login session is missing. Please log in again."
         ),
       ]);
+
       return;
     }
 
+    // Prepare conversation history
     const history = messages
       .filter(
         (message) =>
@@ -113,6 +154,7 @@ export default function AIChatbox() {
         content: message.content,
       }));
 
+    // Display user message
     setMessages((previous) => [
       ...previous,
       createMessage("user", messageText),
@@ -122,71 +164,100 @@ export default function AIChatbox() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        "http://127.0.0.1:8000/api/ai/chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            message: messageText,
-            history,
-          }),
-        }
-      );
+      console.log("Remy API:", CHAT_ENDPOINT);
 
+      // Connect to hosted backend
+      const response = await fetch(CHAT_ENDPOINT, {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+
+        body: JSON.stringify({
+          message: messageText,
+          history,
+        }),
+      });
+
+      // Read backend response
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(
-          result.detail || "Unable to contact Remy."
+          result.detail ||
+            `Remy request failed (${response.status})`
         );
       }
 
       if (!result.reply) {
-        throw new Error("Remy returned an empty response.");
+        throw new Error(
+          "Remy returned an empty response."
+        );
       }
 
+      // Display Remy's reply
       setMessages((previous) => [
         ...previous,
         createMessage("assistant", result.reply),
       ]);
-
     } catch (error) {
       console.error("Remy chat error:", error);
+
+      let errorMessage = error.message;
+
+      if (
+        error instanceof TypeError &&
+        error.message.toLowerCase().includes("fetch")
+      ) {
+        errorMessage =
+          "Cannot connect to Remy. Please check your internet connection and backend server.";
+      }
 
       setMessages((previous) => [
         ...previous,
         createMessage(
           "assistant",
-          `Sorry, something went wrong. ${error.message}`
+          `Sorry, something went wrong. ${errorMessage}`
         ),
       ]);
-
     } finally {
       setIsLoading(false);
     }
   };
+
+  // ===================================================
+  // FORM SUBMISSION
+  // ===================================================
 
   const handleSubmit = (event) => {
     event.preventDefault();
     sendMessage(draft);
   };
 
+  // ===================================================
+  // CLEAR CONVERSATION
+  // ===================================================
+
   const clearConversation = () => {
     if (isLoading) return;
+
     setMessages([WELCOME_MESSAGE]);
   };
+
+  // ===================================================
+  // CONVERSATION CHECK
+  // ===================================================
 
   const hasConversation = messages.some(
     (message) => !message.localOnly
   );
 
-  // IMPORTANT:
-  // No floating launcher is rendered.
-  // Remy opens only from the sidebar card.
+  // ===================================================
+  // CHAT PANEL
+  // ===================================================
+
   if (!isOpen) {
     return null;
   }
@@ -208,6 +279,7 @@ export default function AIChatbox() {
 
           <div className="remy-header-text">
             <h3>Remy</h3>
+
             <p>
               <span className="remy-status-dot" />
               Your AI productivity assistant
@@ -220,6 +292,7 @@ export default function AIChatbox() {
             onClick={clearConversation}
             title="Clear conversation"
             disabled={isLoading}
+            type="button"
           >
             <Trash2 size={17} />
           </button>
@@ -227,6 +300,7 @@ export default function AIChatbox() {
           <button
             onClick={() => setIsOpen(false)}
             title="Minimize chat"
+            type="button"
           >
             <ChevronDown size={20} />
           </button>
@@ -234,13 +308,14 @@ export default function AIChatbox() {
           <button
             onClick={() => setIsOpen(false)}
             title="Close chat"
+            type="button"
           >
             <X size={19} />
           </button>
         </div>
       </header>
 
-      {/* MESSAGES */}
+      {/* CHAT MESSAGES */}
 
       <div className="remy-chat-messages">
         <div className="remy-chat-date">
@@ -276,7 +351,7 @@ export default function AIChatbox() {
           </div>
         ))}
 
-        {/* STARTER QUESTIONS */}
+        {/* STARTER PROMPTS */}
 
         {!hasConversation && (
           <div className="remy-starter-section">
@@ -288,6 +363,7 @@ export default function AIChatbox() {
                   key={prompt}
                   onClick={() => sendMessage(prompt)}
                   disabled={isLoading}
+                  type="button"
                 >
                   <Sparkles size={13} />
                   {prompt}
@@ -297,7 +373,7 @@ export default function AIChatbox() {
           </div>
         )}
 
-        {/* TYPING INDICATOR */}
+        {/* LOADING ANIMATION */}
 
         {isLoading && (
           <div className="remy-message-row remy-assistant-row">
@@ -317,7 +393,7 @@ export default function AIChatbox() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* MESSAGE INPUT */}
+      {/* CHAT FOOTER */}
 
       <div className="remy-chat-footer">
         <form
@@ -357,10 +433,12 @@ export default function AIChatbox() {
         <div className="remy-footer-note">
           <span>
             <Sparkles size={12} />
-            Powered by local AI
+            Powered by cloud AI
           </span>
 
-          <span>Llama 3.2 · Private on your device</span>
+          <span>
+            Remy · AI productivity assistant
+          </span>
         </div>
       </div>
     </section>

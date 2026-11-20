@@ -9,6 +9,7 @@ import ShareReminderButton from "./ShareReminderButton";
 import SharedReminders from "./SharedReminders";
 import "./SmartFilters.css";
 import "./ReminderTemplates.css";
+import { API_BASE } from "./config";
 <VoiceInput
   onTranscript={(transcript) => {
     setNewTask((previous) => ({
@@ -784,7 +785,8 @@ useEffect(() => {
   const loadSnoozes = async () => {
     try {
       const response = await fetch(
-        "http://127.0.0.1:8000/api/reminders/snoozes",
+        `${API_BASE}/api/reminders/snoozes`
+        ,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -837,7 +839,7 @@ function LegacySubtasksPanel({ reminderId }) {
   const [expanded, setExpanded] = useState(false);
   const [error, setError] = useState("");
 
-  const API_URL = "http://127.0.0.1:8000";
+  const API_URL = API_BASE;
 
   const getToken = () =>
     localStorage.getItem("remindme_access_token");
