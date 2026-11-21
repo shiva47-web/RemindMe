@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -8,6 +9,8 @@ export default defineConfig({
 
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
+
       includeAssets: [
         'favicon.ico',
         'push-sw.js'
@@ -22,6 +25,7 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
+
         icons: [
           {
             src: '/pwa-192x192.png',
@@ -37,7 +41,11 @@ export default defineConfig({
       },
 
       workbox: {
-        importScripts: ['/push-sw.js']
+        importScripts: ['/push-sw.js'],
+        cleanupOutdatedCaches: true,
+        navigateFallback: 'index.html',
+        skipWaiting: true,
+        clientsClaim: true
       }
     })
   ]
