@@ -366,10 +366,43 @@ def get_me(
 # CLOUDINARY SIGNATURE
 # ======================================================
 
+
 @router.post("/cloudinary-signature")
 def create_cloudinary_signature(
     current_user: dict = Depends(get_current_user)
 ):
+    if not all([
+        CLOUDINARY_CLOUD_NAME,
+        CLOUDINARY_API_KEY,
+        CLOUDINARY_API_SECRET
+    ]):
+        raise HTTPException(
+            status_code=500,
+            detail="Cloudinary is not configured on the server."
+        )
+
+    timestamp = int(time.time())
+
+    # Cloudinary signature: sorted parameters + API secret,
+    # hashed using SHA-1 (not HMAC-SHA1).
+    parameters = (
+        f"folder={CLOUDINARY_PROFILE_FOLDER}"
+        f"&timestamp={timestamp}"
+    )
+
+    signature = hashlib.sha1(
+        (
+            parameters + CLOUDINARY_API_SECRET
+        ).encode("utf-8")
+    ).hexdigest()
+
+    return {
+        "cloud_name": CLOUDINARY_CLOUD_NAME,
+        "api_key": CLOUDINARY_API_KEY,
+        "timestamp": timestamp,
+        "folder": CLOUDINARY_PROFILE_FOLDER,
+        "signature": signature,
+    }
 
     if not all([
         CLOUDINARY_CLOUD_NAME,
