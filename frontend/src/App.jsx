@@ -1948,7 +1948,7 @@ const handleProfilePhotoChange = async (event) => {
               )}
             </button>
 
-            {/* Top avatar opens profile directly. */}
+            {/* Top avatar opens the profile. Keep the photo inside this button. */}
             <button
               type="button"
               className="top-avatar"
@@ -1956,19 +1956,39 @@ const handleProfilePhotoChange = async (event) => {
               aria-label="Open my profile"
               onClick={() => {
                 setShowProfileMenu(false);
-                const user = getSignedInUser();
-                setProfileUser(user);
-                setProfileName(user.name || "");
-                setProfileEmail(user.email || "");
-                setProfileAvatarUrl(user.avatar_url || "");
-                setProfileError("");
-                setProfileSuccess("");
+                setProfileUser(getSignedInUser());
                 setShowProfileModal(true);
+              }}
+              style={{
+                width: 42,
+                height: 42,
+                minWidth: 42,
+                padding: 0,
+                borderRadius: "50%",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                position: "relative",
               }}
             >
               {profileUser.avatar_url ? (
-                <img src={profileUser.avatar_url} alt="Profile" />
-              ) : profileInitial}
+                <img
+                  src={profileUser.avatar_url}
+                  alt="Profile"
+                  className="top-avatar-image"
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    borderRadius: "50%",
+                  }}
+                />
+              ) : (
+                profileInitial
+              )}
             </button>
           </div>
         </header>
