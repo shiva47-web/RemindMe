@@ -608,17 +608,27 @@ function App() {
           user.email?.split("@")[0] ||
           "My Account",
         email: user.email || "",
+        avatar_url: user.avatar_url || user.avatarUrl || "",
       };
     } catch (error) {
       console.error("Unable to load profile:", error);
       return { name: "My Account", email: "" };
     }
   };
+const [profileUser, setProfileUser] = useState(getSignedInUser);
+const [showProfileMenu, setShowProfileMenu] = useState(false);
+const [showProfileModal, setShowProfileModal] = useState(false);
+const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const [profileUser, setProfileUser] = useState(getSignedInUser);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+const [profileName, setProfileName] = useState(getSignedInUser().name);
+const [profileEmail, setProfileEmail] = useState(getSignedInUser().email);
+const [profileAvatarUrl, setProfileAvatarUrl] = useState(
+  getSignedInUser().avatar_url || ""
+);
+const [profileUploading, setProfileUploading] = useState(false);
+const [profileSaving, setProfileSaving] = useState(false);
+const [profileError, setProfileError] = useState("");
+const [profileSuccess, setProfileSuccess] = useState("");
 
   const profileInitial = (profileUser.name || "M")
     .trim()
@@ -654,7 +664,13 @@ function App() {
     }
 
     if (action === "profile") {
-      setProfileUser(getSignedInUser());
+      const user = getSignedInUser();
+      setProfileUser(user);
+      setProfileName(user.name || "");
+      setProfileEmail(user.email || "");
+      setProfileAvatarUrl(user.avatar_url || "");
+      setProfileError("");
+      setProfileSuccess("");
       setShowProfileModal(true);
     }
 
@@ -668,8 +684,161 @@ function App() {
       }
     }
   };
-
   // ----------------------------------------------------
+// UPDATE PROFILE THROUGH BACKEND
+// ----------------------------------------------------
+
+const saveProfile = async (event) => {
+  event.preventDefault();
+
+  const fullName = profileName.trim();
+  const email = profileEmail.trim().toLowerCase();
+
+  if (!fullName) {
+    setProfileError("Please enter your name.");
+    return;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setProfileError("Please enter a valid email address.");
+    return;
+  }
+
+  const token = localStorage.getItem("remindme_access_token");
+  if (!token) {
+    setProfileError("Your session has expired. Please log in again.");
+    return;
+  }
+
+  setProfileSaving(true);
+  setProfileError("");
+  setProfileSuccess("");
+
+  try {
+    const response = await fetch(`${API_BASE}/api/auth/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        full_name: fullName,
+        email,
+        avatar_url: profileAvatarUrl || null,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.detail || "Unable to update your profile.");
+    }
+
+    const updatedUser = result.user;
+    if (!updatedUser) {
+      throw new Error("The server did not return updated profile details.");
+    }
+
+    const savedUser = JSON.parse(localStorage.getItem("remindme_user") || "{}");
+    const updatedLocalUser = {
+      ...savedUser,
+      ...updatedUser,
+      name: updatedUser.full_name || fullName,
+      full_name: updatedUser.full_name || fullName,
+      email: updatedUser.email || email,
+      avatar_url: updatedUser.avatar_url || profileAvatarUrl || "",
+    };
+
+    localStorage.setItem("remindme_user", JSON.stringify(updatedLocalUser));
+    setProfileUser(updatedLocalUser);
+    setProfileName(updatedLocalUser.name);
+    setProfileEmail(updatedLocalUser.email);
+    setProfileAvatarUrl(updatedLocalUser.avatar_url || "");
+
+    window.dispatchEvent(new Event("remindme:profile-updated"));
+    setProfileSuccess("Your profile has been updated successfully.");
+  } catch (error) {
+    console.error("Profile update error:", error);
+    setProfileError(error.message || "Unable to update profile.");
+  } finally {
+    setProfileSaving(false);
+  }
+};
+
+// Ask the backend for a signed Cloudinary upload. The API secret stays
+// on the backend and is never exposed to the browser.
+const handleProfilePhotoChange = async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    setProfileError("Please choose an image file.");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    setProfileError("Please choose an image smaller than 5 MB.");
+    return;
+  }
+
+  const token = localStorage.getItem("remindme_access_token");
+  if (!token) {
+    setProfileError("Your session has expired. Please log in again.");
+    return;
+  }
+
+  setProfileUploading(true);
+  setProfileError("");
+  setProfileSuccess("");
+
+  try {
+    const signatureResponse = await fetch(
+      `${API_BASE}/api/auth/cloudinary-signature`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    const signatureData = await signatureResponse.json().catch(() => ({}));
+
+    if (!signatureResponse.ok) {
+      throw new Error(
+        signatureData.detail || "Unable to prepare the photo upload."
+      );
+    }
+
+    const cloudName = signatureData.cloud_name || "qd7p6iq8";
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("api_key", signatureData.api_key);
+    formData.append("timestamp", String(signatureData.timestamp));
+    formData.append("signature", signatureData.signature);
+    if (signatureData.folder) {
+      formData.append("folder", signatureData.folder);
+    }
+
+    const uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: "POST", body: formData }
+    );
+    const uploadResult = await uploadResponse.json().catch(() => ({}));
+
+    if (!uploadResponse.ok || !uploadResult.secure_url) {
+      throw new Error(
+        uploadResult.error?.message || "Cloudinary could not upload this photo."
+      );
+    }
+
+    setProfileAvatarUrl(uploadResult.secure_url);
+    setProfileSuccess(
+      "Photo uploaded. Select Save changes to keep it on your profile."
+    );
+  } catch (error) {
+    console.error("Profile photo upload error:", error);
+    setProfileError(error.message || "Unable to upload profile photo.");
+  } finally {
+    setProfileUploading(false);
+  }
+};
+
   // TASKS
   // ----------------------------------------------------
 
@@ -1632,7 +1801,11 @@ function App() {
           </button>
 
           <div className="profile profile-menu-container">
-            <div className="avatar">{profileInitial}</div>
+            <div className="avatar">
+              {profileUser.avatar_url ? (
+                <img src={profileUser.avatar_url} alt="Profile" />
+              ) : profileInitial}
+            </div>
 
             <div className="profile-info">
               <strong>{profileUser.name}</strong>
@@ -1665,7 +1838,11 @@ function App() {
 
                 <div className="profile-dropdown">
                   <div className="profile-dropdown-header">
-                    <div className="avatar">{profileInitial}</div>
+                    <div className="avatar">
+                      {profileUser.avatar_url ? (
+                        <img src={profileUser.avatar_url} alt="Profile" />
+                      ) : profileInitial}
+                    </div>
 
                     <div>
                       <strong>{profileUser.name}</strong>
@@ -1779,11 +1956,19 @@ function App() {
               aria-label="Open my profile"
               onClick={() => {
                 setShowProfileMenu(false);
-                setProfileUser(getSignedInUser());
+                const user = getSignedInUser();
+                setProfileUser(user);
+                setProfileName(user.name || "");
+                setProfileEmail(user.email || "");
+                setProfileAvatarUrl(user.avatar_url || "");
+                setProfileError("");
+                setProfileSuccess("");
                 setShowProfileModal(true);
               }}
             >
-              {profileInitial}
+              {profileUser.avatar_url ? (
+                <img src={profileUser.avatar_url} alt="Profile" />
+              ) : profileInitial}
             </button>
           </div>
         </header>
@@ -2254,52 +2439,159 @@ function App() {
         </div>
       </main>
 
-      {/* PROFILE MODAL */}
+      
+{/* PROFILE MODAL */}
 
-      {showProfileModal && (
-        <div
-          className="account-modal-overlay"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowProfileModal(false);
-            }
-          }}
-        >
-          <div className="account-modal">
-            <div className="account-modal-header">
-              <h2>My Profile</h2>
+{showProfileModal && (
+  <div
+    className="account-modal-overlay profile-modal-overlay"
+    onClick={(event) => {
+      if (
+        event.target === event.currentTarget &&
+        !profileSaving &&
+        !profileUploading
+      ) {
+        setShowProfileModal(false);
+        setProfileError("");
+        setProfileSuccess("");
+      }
+    }}
+  >
+    <style>{`
+      .profile-editor { width: min(100%, 480px); }
+      .profile-editor .account-modal-header { margin-bottom: 8px; }
+      .profile-editor-intro { color: #7b8496; font-size: 13px; margin: 0 0 22px; }
+      .profile-photo-area { display:flex; flex-direction:column; align-items:center; gap:10px; margin:12px 0 24px; }
+      .profile-photo-preview { width:96px; height:96px; border-radius:50%; overflow:hidden; display:grid; place-items:center; background:linear-gradient(135deg,#7865e8,#a78bfa); color:white; font-size:34px; font-weight:700; border:4px solid rgba(125,105,235,.16); }
+      .profile-photo-preview img { width:100%; height:100%; object-fit:cover; }
+      .profile-photo-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:9px 15px; border-radius:10px; border:1px solid #dedaf8; background:#f7f5ff; color:#5e4bc5; font-weight:600; cursor:pointer; font-size:13px; }
+      .profile-photo-button:has(input:disabled) { opacity:.6; cursor:wait; }
+      .profile-photo-hint { font-size:11px; color:#8991a1; }
+      .profile-field { display:flex; flex-direction:column; gap:7px; margin:14px 0; }
+      .profile-field label { font-size:13px; font-weight:600; color:#3c4352; }
+      .profile-field input { width:100%; box-sizing:border-box; padding:12px 13px; border:1px solid #dfe3eb; border-radius:10px; background:#fff; color:#202636; outline:none; }
+      .profile-field input:focus { border-color:#8b78ec; box-shadow:0 0 0 3px rgba(139,120,236,.13); }
+      .profile-field small { color:#8790a0; font-size:11px; line-height:1.5; }
+      .profile-editor .profile-form-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+      .profile-editor .profile-form-actions button { min-width:112px; }
+      .profile-editor .profile-form-error, .profile-editor .profile-form-success { padding:10px 12px; border-radius:9px; font-size:13px; }
+      .avatar img, .top-avatar img { width:100%; height:100%; border-radius:inherit; object-fit:cover; display:block; }
+    `}</style>
 
-              <button
-                type="button"
-                onClick={() => setShowProfileModal(false)}
-                aria-label="Close profile"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="account-profile-avatar">
-              {profileInitial}
-            </div>
-
-            <div className="account-profile-details">
-              <label>Name</label>
-              <p>{profileUser.name || "My Account"}</p>
-
-              <label>Email</label>
-              <p>{profileUser.email || "No email available"}</p>
-            </div>
-
-            <button
-              type="button"
-              className="account-modal-close"
-              onClick={() => setShowProfileModal(false)}
-            >
-              Close
-            </button>
-          </div>
+    <div className="account-modal profile-editor">
+      <div className="account-modal-header">
+        <div>
+          <h2>Edit your profile</h2>
+          <p className="profile-editor-intro">Update your details and profile photo.</p>
         </div>
-      )}
+        <button
+          type="button"
+          onClick={() => {
+            setShowProfileModal(false);
+            setProfileError("");
+            setProfileSuccess("");
+          }}
+          aria-label="Close profile"
+          disabled={profileSaving || profileUploading}
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={saveProfile}>
+        <div className="profile-photo-area">
+          <div className="profile-photo-preview">
+            {profileAvatarUrl ? (
+              <img src={profileAvatarUrl} alt="Profile preview" />
+            ) : (
+              (profileName || "M").trim().charAt(0).toUpperCase()
+            )}
+          </div>
+          <label className="profile-photo-button">
+            {profileUploading ? "Uploading photo..." : "Choose profile photo"}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePhotoChange}
+              disabled={profileUploading || profileSaving}
+              style={{ display: "none" }}
+            />
+          </label>
+          <span className="profile-photo-hint">JPG, PNG, WEBP · Maximum 5 MB</span>
+        </div>
+
+        <div className="profile-field">
+          <label htmlFor="profile-name">Full name</label>
+          <input
+            id="profile-name"
+            type="text"
+            value={profileName}
+            onChange={(event) => {
+              setProfileName(event.target.value);
+              setProfileError("");
+              setProfileSuccess("");
+            }}
+            placeholder="Enter your full name"
+            maxLength={100}
+            required
+            disabled={profileSaving}
+          />
+        </div>
+
+        <div className="profile-field">
+          <label htmlFor="profile-email">Email address</label>
+          <input
+            id="profile-email"
+            type="email"
+            value={profileEmail}
+            onChange={(event) => {
+              setProfileEmail(event.target.value);
+              setProfileError("");
+              setProfileSuccess("");
+            }}
+            placeholder="Enter your email address"
+            maxLength={254}
+            required
+            disabled={profileSaving}
+          />
+          <small>If you change your email, use the new address the next time you log in.</small>
+        </div>
+
+        {profileError && (
+          <p className="profile-form-error" role="alert">{profileError}</p>
+        )}
+        {profileSuccess && (
+          <p className="profile-form-success" role="status">{profileSuccess}</p>
+        )}
+
+        <div className="profile-form-actions">
+          <button
+            type="button"
+            className="account-modal-close"
+            onClick={() => {
+              setProfileName(profileUser.name || "My Account");
+              setProfileEmail(profileUser.email || "");
+              setProfileAvatarUrl(profileUser.avatar_url || "");
+              setProfileError("");
+              setProfileSuccess("");
+              setShowProfileModal(false);
+            }}
+            disabled={profileSaving || profileUploading}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="account-modal-action"
+            disabled={profileSaving || profileUploading}
+          >
+            {profileSaving ? "Saving..." : "Save changes"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* SETTINGS MODAL */}
 
