@@ -1375,3 +1375,111 @@ body {
     font-size: 16px;
   }
 }
+/* =================================
+   PROFILE THREE-DOT MENU
+================================= */
+
+.profile-menu-container {
+  position: relative;
+}
+
+.profile-menu-trigger {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-menu-trigger:hover {
+  background: rgba(128, 128, 128, 0.13);
+}
+
+.profile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.profile-dropdown {
+  position: absolute;
+  bottom: 48px;
+  right: 0;
+  width: 245px;
+  padding: 10px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 13px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.profile-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+}
+
+.profile-dropdown-header > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-dropdown-header strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.profile-dropdown-header span {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  overflow-wrap: anywhere;
+}
+
+.profile-dropdown-divider {
+  height: 1px;
+  background: var(--border-color, #e5e7eb);
+  margin: 7px 0;
+}
+
+.profile-dropdown > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color, #333);
+  text-align: left;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.profile-dropdown > button:hover {
+  background: rgba(128, 128, 128, 0.12);
+}
+
+.profile-dropdown > .profile-logout {
+  color: #dc4545;
+}
+
+.top-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+}

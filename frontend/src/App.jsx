@@ -625,7 +625,85 @@ function CalendarView({
 }
 
 function App() {
+  // SIGNED-IN USER PROFILE
+  const getSignedInUser = () => {
+    try {
+      const savedUser = localStorage.getItem("remindme_user");
 
+      if (!savedUser) {
+        return { name: "My Account", email: "" };
+      }
+
+      const user = JSON.parse(savedUser);
+
+      return {
+        ...user,
+        name:
+          user.name ||
+          user.full_name ||
+          user.display_name ||
+          user.username ||
+          user.email?.split("@")[0] ||
+          "My Account",
+        email: user.email || "",
+      };
+    } catch (error) {
+      console.error("Unable to load profile:", error);
+      return { name: "My Account", email: "" };
+    }
+  };
+
+  const [profileUser, setProfileUser] = useState(getSignedInUser);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const profileInitial = (
+    profileUser.name || "M"
+  ).trim().charAt(0).toUpperCase();
+
+  // Refresh profile information when the app becomes active.
+  useEffect(() => {
+    const refreshProfile = () => {
+      setProfileUser(getSignedInUser());
+    };
+
+    window.addEventListener("storage", refreshProfile);
+    window.addEventListener("remindme:profile-updated", refreshProfile);
+
+    return () => {
+      window.removeEventListener("storage", refreshProfile);
+      window.removeEventListener(
+        "remindme:profile-updated",
+        refreshProfile
+      );
+    };
+  }, []);
+
+  const handleProfileAction = (action) => {
+    setShowProfileMenu(false);
+
+    if (action === "settings") {
+      setActivePage("Settings");
+    }
+
+    if (action === "notifications") {
+      enableNotifications();
+    }
+
+    if (action === "profile") {
+      window.dispatchEvent(new Event("remindme:open-profile"));
+    }
+
+    if (action === "logout") {
+      const confirmed = window.confirm(
+        "Are you sure you want to log out?"
+      );
+
+      if (confirmed) {
+        // Let AuthGate handle the actual logout and token cleanup.
+        window.dispatchEvent(new Event("remindme:logout"));
+      }
+    }
+  };
   // LOAD SAVED TASKS
 
   const [tasks, setTasks] = useState(() => {
@@ -1673,18 +1751,92 @@ const visibleTasks = searchableTasks.filter((task) => {
             Settings
           </button>
 
-          <div className="profile">
+         <div className="profile profile-menu-container">
 
-            <div className="avatar">S</div>
+  <div className="avatar">
+    {profileInitial}
+  </div>
 
-            <div className="profile-info">
-              <strong>Shiva</strong>
-              <span>Personal workspace</span>
-            </div>
+  <div className="profile-info">
+    <strong>{profileUser.name}</strong>
+    <span>{profileUser.email || "Personal workspace"}</span>
+  </div>
 
-            <MoreHorizontal size={20} />
+  <button
+    type="button"
+    className="profile-menu-trigger"
+    title="Account options"
+    aria-label="Open account options"
+    aria-expanded={showProfileMenu}
+    onClick={() => setShowProfileMenu((previous) => !previous)}
+  >
+    <MoreHorizontal size={21} />
+  </button>
 
+  {showProfileMenu && (
+    <>
+      <button
+        type="button"
+        className="profile-menu-backdrop"
+        aria-label="Close account menu"
+        onClick={() => setShowProfileMenu(false)}
+      />
+
+      <div className="profile-dropdown">
+
+        <div className="profile-dropdown-header">
+          <div className="avatar">
+            {profileInitial}
           </div>
+
+          <div>
+            <strong>{profileUser.name}</strong>
+            <span>{profileUser.email}</span>
+          </div>
+        </div>
+
+        <div className="profile-dropdown-divider" />
+
+        <button
+          type="button"
+          onClick={() => handleProfileAction("profile")}
+        >
+          <User size={17} />
+          My profile
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleProfileAction("settings")}
+        >
+          <Settings size={17} />
+          Settings
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleProfileAction("notifications")}
+        >
+          <Bell size={17} />
+          Enable notifications
+        </button>
+
+        <div className="profile-dropdown-divider" />
+
+        <button
+          type="button"
+          className="profile-logout"
+          onClick={() => handleProfileAction("logout")}
+        >
+          <LogOut size={17} />
+          Log out
+        </button>
+
+      </div>
+    </>
+  )}
+
+</div>
 
         </div>
       </aside>
@@ -1735,7 +1887,14 @@ const visibleTasks = searchableTasks.filter((task) => {
 
             </button>
 
-            <div className="top-avatar">S</div>
+           <button
+  type="button"
+  className="top-avatar"
+  title={profileUser.name}
+  onClick={() => setShowProfileMenu((previous) => !previous)}
+>
+  {profileInitial}
+</button>
 
           </div>
         </header>
