@@ -249,15 +249,17 @@ IMPORTANT RULES:
 
     body = json.dumps(payload).encode("utf-8")
 
-    ai_request = urllib.request.Request(
-        GROQ_URL,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {groq_api_key}"
-        },
-        method="POST"
-    )
+   request = urllib.request.Request(
+    GROQ_URL,
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+        "Authorization": f"Bearer {groq_api_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "User-Agent": "RemindMe/1.0",
+    },
+    method="POST",
+)
 
     # --------------------------------------------------
     # CALL GROQ
