@@ -64,6 +64,7 @@ async function readResponse(response) {
   return data;
 }
 
+// LOAD AND RECOVER ACCOUNT WORKSPACE
 async function loadAccountWorkspace(user, token) {
   const response = await fetch(`${API_URL}/api/reminders`, {
     headers: {
@@ -73,12 +74,58 @@ async function loadAccountWorkspace(user, token) {
 
   const result = await readResponse(response);
 
-  const reminders = Array.isArray(result.reminders)
+  let reminders = Array.isArray(result.reminders)
     ? result.reminders
     : [];
 
   const keys = accountKeys(user.id);
 
+  // Read reminders previously saved for this account.
+  const cachedReminders = safeArray(keys.tasks);
+
+  // If the server has no reminders, recover this account's cache.
+  if (reminders.length === 0 && cachedReminders.length > 0) {
+    console.log(
+      "Recovering reminders from this account's local cache..."
+    );
+
+    try {
+      const syncResponse = await fetch(
+        `${API_URL}/api/reminders/sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            timezone:
+              Intl.DateTimeFormat().resolvedOptions().timeZone ||
+              "Asia/Kolkata",
+            reminders: cachedReminders,
+          }),
+        }
+      );
+
+      await readResponse(syncResponse);
+
+      reminders = cachedReminders;
+
+      console.log(
+        "Previous reminders recovered and synced successfully."
+      );
+    } catch (syncError) {
+      // Keep recovered reminders available locally if sync fails.
+      console.error(
+        "Reminder recovery sync failed:",
+        syncError
+      );
+
+      reminders = cachedReminders;
+    }
+  }
+
+  // Save the final reminder list.
   localStorage.setItem(keys.tasks, JSON.stringify(reminders));
   localStorage.setItem("remindme_tasks", JSON.stringify(reminders));
 
@@ -116,6 +163,7 @@ async function loadAccountWorkspace(user, token) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+// SAVE CURRENT ACCOUNT CACHE
 function saveCurrentAccountCache(user) {
   if (!user?.id) return;
 
@@ -182,7 +230,7 @@ export default function AuthGate({ children }) {
     );
   }, [notificationPreferences]);
 
-  // Close the three-dot menu when clicking outside it
+  // Close menu when clicking outside
   useEffect(() => {
     function handleOutsideClick(event) {
       if (
@@ -315,10 +363,59 @@ export default function AuthGate({ children }) {
     }
   }
 
-  // LOGOUT - EXISTING FUNCTIONALITY PRESERVED
-  function handleLogout() {
+  
+  // LOGOUT - SAVE REMINDERS BEFORE CLEARING SESSION
+  async function handleLogout() {
+    const token = localStorage.getItem(TOKEN_KEY);
+
+    // Save a local backup for this account first.
     saveCurrentAccountCache(currentUser);
 
+    // Read the latest reminders from local storage.
+    const latestReminders = safeArray("remindme_tasks");
+
+    // Sync the latest reminders to PostgreSQL before logout.
+    if (token && currentUser?.id) {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/reminders/sync`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              timezone:
+                Intl.DateTimeFormat().resolvedOptions().timeZone ||
+                "Asia/Kolkata",
+              reminders: latestReminders,
+            }),
+          }
+        );
+
+        await readResponse(response);
+
+        console.log(
+          "RemindMe: reminders safely synced before logout."
+        );
+
+        // Update the account-specific backup after successful sync.
+        const keys = accountKeys(currentUser.id);
+
+        localStorage.setItem(
+          keys.tasks,
+          JSON.stringify(latestReminders)
+        );
+      } catch (syncError) {
+        console.error(
+          "Logout sync failed. Keeping local backup:",
+          syncError
+        );
+      }
+    }
+
+    // Clear login session only after attempting the sync.
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem("remindme_tasks");
@@ -333,11 +430,13 @@ export default function AuthGate({ children }) {
     setActivePanel("");
   }
 
+
   function openPanel(panel) {
     setMenuOpen(false);
     setActivePanel(panel);
   }
 
+  // BROWSER NOTIFICATIONS
   async function toggleBrowserNotifications() {
     if (notificationPreferences.browserNotifications) {
       setNotificationPreferences((previous) => ({
@@ -395,9 +494,7 @@ export default function AuthGate({ children }) {
 
     const displayEmail = currentUser.email || "Email unavailable";
 
-    const avatarLetter = displayName
-      .charAt(0)
-      .toUpperCase();
+    const avatarLetter = displayName.charAt(0).toUpperCase();
 
     return (
       <div className="authenticated-shell">

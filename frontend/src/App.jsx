@@ -829,6 +829,68 @@ useEffect(() => {
   };
 }, []);
 
+// AUTOMATICALLY SYNC REMINDERS WITH POSTGRESQL
+useEffect(() => {
+  const token = localStorage.getItem("remindme_access_token");
+
+  if (!token) return;
+
+  let cancelled = false;
+
+  const syncReminders = async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/reminders/sync`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            timezone:
+              Intl.DateTimeFormat().resolvedOptions().timeZone ||
+              "Asia/Kolkata",
+            reminders: tasks,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+
+        throw new Error(
+          error.detail || `Sync failed: ${response.status}`
+        );
+      }
+
+      const result = await response.json();
+
+      if (!cancelled) {
+        console.log(
+          "RemindMe PostgreSQL sync successful:",
+          result.count
+        );
+      }
+    } catch (error) {
+      if (!cancelled) {
+        console.error(
+          "RemindMe PostgreSQL sync error:",
+          error
+        );
+      }
+    }
+  };
+
+  const timeout = setTimeout(syncReminders, 500);
+
+  return () => {
+    cancelled = true;
+    clearTimeout(timeout);
+  };
+}, [tasks]);
+
+
   // REQUEST NOTIFICATION PERMISSION
 
   const enableNotifications = async () => {
