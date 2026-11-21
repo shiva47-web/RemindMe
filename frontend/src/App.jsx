@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import SubtasksPanel from "./SubtasksPanel";
 import FocusMode from "./FocusMode";
@@ -41,11 +42,10 @@ import {
   CalendarCheck,
 } from "lucide-react";
 
+// ======================================================
+// DATE HELPERS
+// ======================================================
 
-import "./App.css";
-import "./Calendar.css";
-
-// GET TODAY'S DATE
 const getToday = () => {
   const date = new Date();
   const year = date.getFullYear();
@@ -55,7 +55,6 @@ const getToday = () => {
   return `${year}-${month}-${day}`;
 };
 
-// CONVERT DATE TO YYYY-MM-DD
 function toISODate(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -64,14 +63,11 @@ function toISODate(date) {
   return `${year}-${month}-${day}`;
 }
 
-// CONVERT YYYY-MM-DD TO LOCAL DATE
 function fromISODate(dateString) {
   const [year, month, day] = dateString.split("-").map(Number);
-
   return new Date(year, month - 1, day);
 }
 
-// CHECK WHETHER A REMINDER OCCURS ON A PARTICULAR DATE
 function isTaskScheduledOnDate(task, dateString) {
   if (!task.date || !dateString || dateString < task.date) {
     return false;
@@ -86,9 +82,7 @@ function isTaskScheduledOnDate(task, dateString) {
   const startDate = fromISODate(task.date);
   const targetDate = fromISODate(dateString);
 
-  if (repeat === "daily") {
-    return true;
-  }
+  if (repeat === "daily") return true;
 
   if (repeat === "weekly") {
     return startDate.getDay() === targetDate.getDay();
@@ -101,34 +95,32 @@ function isTaskScheduledOnDate(task, dateString) {
   return task.date === dateString;
 }
 
-// RECURRING REMINDERS ARE COMPLETED PER OCCURRENCE
 function isTaskDoneOnDate(task, dateString) {
   if (task.repeat && task.repeat !== "none") {
-    return Array.isArray(task.completedDates) &&
-      task.completedDates.includes(dateString);
+    return (
+      Array.isArray(task.completedDates) &&
+      task.completedDates.includes(dateString)
+    );
   }
 
   return Boolean(task.done);
 }
 
-// NEXT DATE FOR DISPLAYING A REMINDER
 function getNextOccurrenceDate(task, fromDate = getToday()) {
   if (!task.date) return null;
 
   const start = task.date > fromDate ? task.date : fromDate;
 
   if (task.repeat === "none" || !task.repeat) {
-    return task.date >= fromDate && !task.done
-      ? task.date
-      : null;
+    return task.date >= fromDate && !task.done ? task.date : null;
   }
 
   const cursor = fromISODate(start);
 
-  // Search forward for the next scheduled occurrence that is not completed.
   for (let offset = 0; offset <= 366; offset += 1) {
     const candidate = new Date(cursor);
     candidate.setDate(cursor.getDate() + offset);
+
     const candidateString = toISODate(candidate);
 
     if (
@@ -142,7 +134,6 @@ function getNextOccurrenceDate(task, fromDate = getToday()) {
   return null;
 }
 
-// FORMAT TIME
 function formatTime(time) {
   if (!time) return "Anytime";
 
@@ -157,7 +148,10 @@ function formatTime(time) {
   });
 }
 
-// INITIAL TASKS
+// ======================================================
+// DEFAULT REMINDERS
+// ======================================================
+
 const initialTasks = [
   {
     id: 1,
@@ -201,7 +195,54 @@ const initialTasks = [
   },
 ];
 
+const defaultReminderTemplates = [
+  {
+    id: "study-template",
+    name: "Study Session",
+    title: "Study session",
+    description: "Review notes and practice questions.",
+    category: "Study",
+    priority: "Medium",
+    repeat: "none",
+    time: "",
+  },
+  {
+    id: "assignment-template",
+    name: "Assignment",
+    title: "Complete assignment",
+    description:
+      "Work on the assignment and review before submission.",
+    category: "Study",
+    priority: "High",
+    repeat: "none",
+    time: "",
+  },
+  {
+    id: "meeting-template",
+    name: "Work Meeting",
+    title: "Team meeting",
+    description: "Prepare topics and meeting notes.",
+    category: "Work",
+    priority: "Medium",
+    repeat: "none",
+    time: "",
+  },
+  {
+    id: "bill-template",
+    name: "Bill Payment",
+    title: "Pay pending bill",
+    description: "Check the amount and complete the payment.",
+    category: "Personal",
+    priority: "High",
+    repeat: "none",
+    time: "",
+  },
+];
+
+// ======================================================
 // CALENDAR COMPONENT
+// ======================================================
+
 function CalendarView({
   tasks,
   onAdd,
@@ -212,24 +253,18 @@ function CalendarView({
   const [viewMonth, setViewMonth] = useState(() => {
     const today = new Date();
 
-    return new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      1
-    );
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
   const [selectedDate, setSelectedDate] = useState(getToday());
 
   const todayString = getToday();
 
-  // MONTH NAME
   const monthTitle = viewMonth.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
 
-  // GET DAYS FOR CALENDAR GRID
   const getCalendarDays = () => {
     const firstDay = new Date(
       viewMonth.getFullYear(),
@@ -237,25 +272,20 @@ function CalendarView({
       1
     );
 
-    // Monday is the first day of the week.
     const startingOffset = (firstDay.getDay() + 6) % 7;
-
     const startDate = new Date(firstDay);
 
     startDate.setDate(firstDay.getDate() - startingOffset);
 
     return Array.from({ length: 42 }, (_, index) => {
       const day = new Date(startDate);
-
       day.setDate(startDate.getDate() + index);
-
       return day;
     });
   };
 
   const calendarDays = getCalendarDays();
 
-  // SELECT A CALENDAR DATE
   const selectDate = (date) => {
     setSelectedDate(toISODate(date));
 
@@ -269,7 +299,6 @@ function CalendarView({
     }
   };
 
-  // MOVE BETWEEN MONTHS
   const changeMonth = (amount) => {
     setViewMonth(
       (previous) =>
@@ -281,30 +310,24 @@ function CalendarView({
     );
   };
 
-  // TASKS ON SELECTED DATE
   const selectedTasks = tasks
     .filter((task) => isTaskScheduledOnDate(task, selectedDate))
-    .sort((a, b) => {
-      return (a.time || "23:59").localeCompare(
-        b.time || "23:59"
-      );
-    });
+    .sort((a, b) =>
+      (a.time || "23:59").localeCompare(b.time || "23:59")
+    );
 
-  // PRETTY SELECTED DATE
-  const selectedDateLabel = fromISODate(
-    selectedDate
-  ).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  const selectedDateLabel = fromISODate(selectedDate).toLocaleDateString(
+    "en-US",
+    {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }
+  );
 
   return (
     <section className="calendar-page">
-
-      {/* CALENDAR HEADER */}
-
       <div className="calendar-page-header">
         <div>
           <div className="calendar-eyebrow">
@@ -316,9 +339,7 @@ function CalendarView({
             Your <span>Calendar.</span>
           </h1>
 
-          <p>
-            Plan your days. Keep your life organized.
-          </p>
+          <p>Plan your days. Keep your life organized.</p>
         </div>
 
         <button
@@ -330,23 +351,15 @@ function CalendarView({
         </button>
       </div>
 
-      {/* CALENDAR AND DETAILS */}
-
       <div className="calendar-content-grid">
-
-        {/* MONTHLY CALENDAR */}
-
         <div className="calendar-month-card">
-
           <div className="calendar-month-header">
-
             <div>
               <span>MONTHLY VIEW</span>
               <h2>{monthTitle}</h2>
             </div>
 
             <div className="calendar-navigation">
-
               <button
                 onClick={() => changeMonth(-1)}
                 title="Previous month"
@@ -362,9 +375,7 @@ function CalendarView({
               >
                 <ChevronRight size={20} />
               </button>
-
             </div>
-
           </div>
 
           <button
@@ -373,11 +384,7 @@ function CalendarView({
               const today = new Date();
 
               setViewMonth(
-                new Date(
-                  today.getFullYear(),
-                  today.getMonth(),
-                  1
-                )
+                new Date(today.getFullYear(), today.getMonth(), 1)
               );
 
               setSelectedDate(getToday());
@@ -387,39 +394,24 @@ function CalendarView({
             Go to today
           </button>
 
-          {/* WEEKDAY LABELS */}
-
           <div className="calendar-weekdays">
-            {[
-              "MON",
-              "TUE",
-              "WED",
-              "THU",
-              "FRI",
-              "SAT",
-              "SUN",
-            ].map((day) => (
-              <div key={day}>{day}</div>
-            ))}
+            {["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].map(
+              (day) => (
+                <div key={day}>{day}</div>
+              )
+            )}
           </div>
 
-          {/* CALENDAR DAYS */}
-
           <div className="calendar-days-grid">
-
             {calendarDays.map((day) => {
               const dateString = toISODate(day);
-
               const isCurrentMonth =
                 day.getMonth() === viewMonth.getMonth();
-
               const isToday = dateString === todayString;
+              const isSelected = dateString === selectedDate;
 
-              const isSelected =
-                dateString === selectedDate;
-
-              const dayTasks = tasks.filter(
-                (task) => isTaskScheduledOnDate(task, dateString)
+              const dayTasks = tasks.filter((task) =>
+                isTaskScheduledOnDate(task, dateString)
               );
 
               return (
@@ -430,37 +422,27 @@ function CalendarView({
                     !isCurrentMonth ? "outside-month" : "",
                     isToday ? "calendar-today" : "",
                     isSelected ? "calendar-selected" : "",
-                    dayTasks.length > 0
-                      ? "calendar-has-tasks"
-                      : "",
+                    dayTasks.length > 0 ? "calendar-has-tasks" : "",
                   ].join(" ")}
                   onClick={() => selectDate(day)}
                   aria-label={`${dateString}, ${dayTasks.length} reminders`}
                   aria-pressed={isSelected}
                 >
-
                   <span className="calendar-day-number">
                     {day.getDate()}
                   </span>
 
                   {dayTasks.length > 0 && (
                     <span className="calendar-task-indicator">
-                      {dayTasks.length > 3
-                        ? "3+"
-                        : dayTasks.length}
+                      {dayTasks.length > 3 ? "3+" : dayTasks.length}
                     </span>
                   )}
-
                 </button>
               );
             })}
-
           </div>
 
-          {/* CALENDAR LEGEND */}
-
           <div className="calendar-legend">
-
             <span>
               <i className="legend-today"></i>
               Today
@@ -475,17 +457,11 @@ function CalendarView({
               <i className="legend-selected"></i>
               Selected date
             </span>
-
           </div>
-
         </div>
 
-        {/* SELECTED DATE TASKS */}
-
         <div className="calendar-details-card">
-
           <div className="calendar-details-header">
-
             <div className="calendar-details-icon">
               <CalendarDays size={23} />
             </div>
@@ -494,7 +470,6 @@ function CalendarView({
               <span>YOUR SCHEDULE</span>
               <h2>Day overview</h2>
             </div>
-
           </div>
 
           <div className="selected-date-heading">
@@ -502,15 +477,12 @@ function CalendarView({
 
             <p>
               {selectedTasks.length} reminder
-              {selectedTasks.length !== 1 ? "s" : ""}
-              scheduled
+              {selectedTasks.length !== 1 ? "s" : ""} scheduled
             </p>
           </div>
 
           <div className="calendar-task-list">
-
             {selectedTasks.length === 0 ? (
-
               <div className="calendar-empty-state">
                 <div>
                   <CalendarDays size={30} />
@@ -519,8 +491,7 @@ function CalendarView({
                 <h3>No reminders yet</h3>
 
                 <p>
-                  This day is free. Add a reminder to
-                  plan something.
+                  This day is free. Add a reminder to plan something.
                 </p>
 
                 <button
@@ -531,22 +502,14 @@ function CalendarView({
                   Create reminder
                 </button>
               </div>
-
             ) : (
-
               selectedTasks.map((task) => (
-
-                <div
-                  className="calendar-task-item"
-                  key={task.id}
-                >
-
+                <div className="calendar-task-item" key={task.id}>
                   <div className="calendar-task-time">
                     {formatTime(task.time)}
                   </div>
 
                   <div className="calendar-task-information">
-
                     <h4
                       className={
                         isTaskDoneOnDate(task, selectedDate)
@@ -563,11 +526,9 @@ function CalendarView({
                         ? ` · Repeats ${task.repeat}`
                         : ""}
                     </span>
-
                   </div>
 
                   <div className="calendar-task-actions">
-
                     <button
                       onClick={() => onToggle(task.id, selectedDate)}
                       title={
@@ -592,15 +553,10 @@ function CalendarView({
                     >
                       <Trash2 size={16} />
                     </button>
-
                   </div>
-
                 </div>
-
               ))
-
             )}
-
           </div>
 
           {selectedTasks.length > 0 && (
@@ -612,24 +568,26 @@ function CalendarView({
               Add another reminder
             </button>
           )}
-
         </div>
-
       </div>
-
-      {/* CALENDAR FOOTER */}
 
       <div className="calendar-footer-note">
         <Sparkles size={17} />
         A little planning today makes tomorrow easier.
       </div>
-
     </section>
   );
 }
 
+// ======================================================
+// MAIN APP
+// ======================================================
+
 function App() {
-  // SIGNED-IN USER PROFILE
+  // ----------------------------------------------------
+  // USER PROFILE
+  // ----------------------------------------------------
+
   const getSignedInUser = () => {
     try {
       const savedUser = localStorage.getItem("remindme_user");
@@ -657,16 +615,16 @@ function App() {
     }
   };
 
-const [profileUser, setProfileUser] = useState(getSignedInUser);
-const [showProfileMenu, setShowProfileMenu] = useState(false);
-const [showProfileModal, setShowProfileModal] = useState(false);
-const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [profileUser, setProfileUser] = useState(getSignedInUser);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const profileInitial = (
-    profileUser.name || "M"
-  ).trim().charAt(0).toUpperCase();
+  const profileInitial = (profileUser.name || "M")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
 
-  // Refresh profile information when the app becomes active.
   useEffect(() => {
     const refreshProfile = () => {
       setProfileUser(getSignedInUser());
@@ -685,40 +643,40 @@ const [showSettingsModal, setShowSettingsModal] = useState(false);
   }, []);
 
   const handleProfileAction = (action) => {
-  setShowProfileMenu(false);
+    setShowProfileMenu(false);
 
-  if (action === "settings") {
-    setShowSettingsModal(true);
-  }
-
-  if (action === "notifications") {
-    enableNotifications();
-  }
-
-  if (action === "profile") {
-    setProfileUser(getSignedInUser());
-    setShowProfileModal(true);
-  }
-
-  if (action === "logout") {
-    const confirmed = window.confirm(
-      "Are you sure you want to log out?"
-    );
-
-    if (confirmed) {
-      window.dispatchEvent(new Event("remindme:logout"));
+    if (action === "settings") {
+      setShowSettingsModal(true);
     }
-  }
-};
-  // LOAD SAVED TASKS
+
+    if (action === "notifications") {
+      enableNotifications();
+    }
+
+    if (action === "profile") {
+      setProfileUser(getSignedInUser());
+      setShowProfileModal(true);
+    }
+
+    if (action === "logout") {
+      const confirmed = window.confirm(
+        "Are you sure you want to log out?"
+      );
+
+      if (confirmed) {
+        window.dispatchEvent(new Event("remindme:logout"));
+      }
+    }
+  };
+
+  // ----------------------------------------------------
+  // TASKS
+  // ----------------------------------------------------
 
   const [tasks, setTasks] = useState(() => {
     try {
       const savedTasks = localStorage.getItem("remindme_tasks");
-
-      return savedTasks
-        ? JSON.parse(savedTasks)
-        : initialTasks;
+      return savedTasks ? JSON.parse(savedTasks) : initialTasks;
     } catch (error) {
       console.error("Unable to load tasks:", error);
       return initialTasks;
@@ -726,19 +684,27 @@ const [showSettingsModal, setShowSettingsModal] = useState(false);
   });
 
   const [activePage, setActivePage] = useState("Overview");
-  // SMART SEARCH AND ADVANCED FILTERS
 
-const [searchQuery, setSearchQuery] = useState("");
-const [filterCategory, setFilterCategory] = useState("all");
-const [filterPriority, setFilterPriority] = useState("all");
-const [filterStatus, setFilterStatus] = useState("all");
-const [filterDate, setFilterDate] = useState("");
+  // ----------------------------------------------------
+  // SEARCH AND FILTERS
+  // ----------------------------------------------------
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDate, setFilterDate] = useState("");
+
+  // ----------------------------------------------------
+  // MODALS
+  // ----------------------------------------------------
 
   const [showModal, setShowModal] = useState(false);
-
   const [editingTaskId, setEditingTaskId] = useState(null);
 
+  // ----------------------------------------------------
   // NOTIFICATION PERMISSION
+  // ----------------------------------------------------
 
   const [notificationPermission, setNotificationPermission] =
     useState(() => {
@@ -749,9 +715,11 @@ const [filterDate, setFilterDate] = useState("");
       return Notification.permission;
     });
 
-  // NEW REMINDER FORM
+  // ----------------------------------------------------
+  // REMINDER FORM
+  // ----------------------------------------------------
 
-  const [newTask, setNewTask] = useState({
+  const emptyTask = {
     title: "",
     description: "",
     date: getToday(),
@@ -759,223 +727,259 @@ const [filterDate, setFilterDate] = useState("");
     category: "Personal",
     priority: "Medium",
     repeat: "none",
-  });
+  };
+
+  const [newTask, setNewTask] = useState(emptyTask);
+
+  // ----------------------------------------------------
   // REMINDER TEMPLATES
+  // ----------------------------------------------------
 
-const [reminderTemplates, setReminderTemplates] = useState(() => {
-  try {
-    const saved = localStorage.getItem("remindme_templates");
-
-    if (saved !== null) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (error) {
-    console.error("Unable to load templates:", error);
-  }
-
-  // DEFAULT TEMPLATES
-
-  return [
-    {
-      id: "study-template",
-      name: "Study Session",
-      title: "Study session",
-      description: "Review notes and practice questions.",
-      category: "Study",
-      priority: "Medium",
-      repeat: "none",
-      time: "",
-    },
-    {
-      id: "assignment-template",
-      name: "Assignment",
-      title: "Complete assignment",
-      description: "Work on the assignment and review before submission.",
-      category: "Study",
-      priority: "High",
-      repeat: "none",
-      time: "",
-    },
-    {
-      id: "meeting-template",
-      name: "Work Meeting",
-      title: "Team meeting",
-      description: "Prepare topics and meeting notes.",
-      category: "Work",
-      priority: "Medium",
-      repeat: "none",
-      time: "",
-    },
-    {
-      id: "bill-template",
-      name: "Bill Payment",
-      title: "Pay pending bill",
-      description: "Check the amount and complete the payment.",
-      category: "Personal",
-      priority: "High",
-      repeat: "none",
-      time: "",
-    },
-  ];
-});
-
-const [selectedTemplateId, setSelectedTemplateId] = useState("");
-
-// SAVE TEMPLATES
-
-useEffect(() => {
-  try {
-    localStorage.setItem(
-      "remindme_templates",
-      JSON.stringify(reminderTemplates)
-    );
-  } catch (error) {
-    console.error("Unable to save templates:", error);
-  }
-}, [reminderTemplates]);
-
-  // SAVE TASKS
-  // SAVE TASKS TO LOCAL STORAGE
-useEffect(() => {
-  try {
-    localStorage.setItem(
-      "remindme_tasks",
-      JSON.stringify(tasks)
-    );
-  } catch (error) {
-    console.error("Unable to save reminders:", error);
-  }
-}, [tasks]);
-
- // LOAD ACTIVE SNOOZES FROM POSTGRESQL
-useEffect(() => {
-  const token = localStorage.getItem(
-    "remindme_access_token"
-  );
-
-  if (!token) return;
-
-  let cancelled = false;
-
-  const loadSnoozes = async () => {
+  const [reminderTemplates, setReminderTemplates] = useState(() => {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/reminders/snoozes`
-        ,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const saved = localStorage.getItem("remindme_templates");
 
-      if (!response.ok) return;
-
-      const result = await response.json();
-
-      if (cancelled) return;
-
-      const snoozeMap = new Map(
-        (result.snoozes || []).map((item) => [
-          `${item.reminder_id}|${item.occurrence_date}`,
-          item,
-        ])
-      );
-
-      setTasks((previous) =>
-        previous.map((task) => {
-          const key = `${task.id}|${getToday()}`;
-          const record = snoozeMap.get(key);
-
-          return {
-            ...task,
-            snoozedUntil: record
-              ? record.snoozed_until
-              : null,
-            snoozedDate: record
-              ? record.occurrence_date
-              : null,
-          };
-        })
-      );
-
-    } catch (error) {
-      console.error("Unable to load snoozes:", error);
-    }
-
-  };
-
-  loadSnoozes();
-
-  return () => {
-    cancelled = true;
-  };
-}, []);
-
-// AUTOMATICALLY SYNC REMINDERS WITH POSTGRESQL
-useEffect(() => {
-  const token = localStorage.getItem("remindme_access_token");
-
-  if (!token) return;
-
-  let cancelled = false;
-
-  const syncReminders = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE}/api/reminders/sync`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            timezone:
-              Intl.DateTimeFormat().resolvedOptions().timeZone ||
-              "Asia/Kolkata",
-            reminders: tasks,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}));
-
-        throw new Error(
-          error.detail || `Sync failed: ${response.status}`
-        );
-      }
-
-      const result = await response.json();
-
-      if (!cancelled) {
-        console.log(
-          "RemindMe PostgreSQL sync successful:",
-          result.count
-        );
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (error) {
-      if (!cancelled) {
-        console.error(
-          "RemindMe PostgreSQL sync error:",
-          error
-        );
-      }
+      console.error("Unable to load templates:", error);
     }
+
+    return defaultReminderTemplates;
+  });
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "remindme_templates",
+        JSON.stringify(reminderTemplates)
+      );
+    } catch (error) {
+      console.error("Unable to save templates:", error);
+    }
+  }, [reminderTemplates]);
+
+  // Apply a selected template to the reminder form.
+  const applyReminderTemplate = (templateId) => {
+    setSelectedTemplateId(templateId);
+
+    if (!templateId) return;
+
+    const template = reminderTemplates.find(
+      (item) => String(item.id) === String(templateId)
+    );
+
+    if (!template) return;
+
+    setNewTask((previous) => ({
+      ...previous,
+      title: template.title || "",
+      description: template.description || "",
+      time: template.time || "",
+      category: template.category || "Personal",
+      priority: template.priority || "Medium",
+      repeat: template.repeat || "none",
+    }));
   };
 
-  const timeout = setTimeout(syncReminders, 500);
+  // Save the current form values as a new template.
+  const saveReminderTemplate = () => {
+    if (!newTask.title.trim()) {
+      alert("Enter a reminder title before saving a template.");
+      return;
+    }
 
-  return () => {
-    cancelled = true;
-    clearTimeout(timeout);
+    const name = window.prompt(
+      "Enter a name for this template:",
+      newTask.title.trim()
+    );
+
+    if (name === null) return;
+
+    if (!name.trim()) {
+      alert("Template name cannot be empty.");
+      return;
+    }
+
+    const template = {
+      id: `template-${Date.now()}`,
+      name: name.trim(),
+      title: newTask.title.trim(),
+      description: newTask.description || "",
+      category: newTask.category || "Personal",
+      priority: newTask.priority || "Medium",
+      repeat: newTask.repeat || "none",
+      time: newTask.time || "",
+    };
+
+    setReminderTemplates((previous) => [template, ...previous]);
+    setSelectedTemplateId(template.id);
+
+    alert("Reminder template saved successfully!");
   };
-}, [tasks]);
 
+  // Delete a saved template.
+  const deleteReminderTemplate = (templateId) => {
+    const template = reminderTemplates.find(
+      (item) => String(item.id) === String(templateId)
+    );
 
-  // REQUEST NOTIFICATION PERMISSION
+    if (!template) return;
+
+    const confirmed = window.confirm(
+      `Delete the "${template.name}" template?`
+    );
+
+    if (!confirmed) return;
+
+    setReminderTemplates((previous) =>
+      previous.filter(
+        (item) => String(item.id) !== String(templateId)
+      )
+    );
+
+    setSelectedTemplateId("");
+  };
+
+  // ----------------------------------------------------
+  // SAVE TASKS LOCALLY
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("remindme_tasks", JSON.stringify(tasks));
+    } catch (error) {
+      console.error("Unable to save reminders:", error);
+    }
+  }, [tasks]);
+
+  // ----------------------------------------------------
+  // LOAD SNOOZES FROM BACKEND
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    const token = localStorage.getItem("remindme_access_token");
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const loadSnoozes = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/reminders/snoozes`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+
+        if (cancelled) return;
+
+        const snoozeMap = new Map(
+          (result.snoozes || []).map((item) => [
+            `${item.reminder_id}|${item.occurrence_date}`,
+            item,
+          ])
+        );
+
+        setTasks((previous) =>
+          previous.map((task) => {
+            const key = `${task.id}|${getToday()}`;
+            const record = snoozeMap.get(key);
+
+            return {
+              ...task,
+              snoozedUntil: record ? record.snoozed_until : null,
+              snoozedDate: record ? record.occurrence_date : null,
+            };
+          })
+        );
+      } catch (error) {
+        console.error("Unable to load snoozes:", error);
+      }
+    };
+
+    loadSnoozes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ----------------------------------------------------
+  // SYNC REMINDERS WITH POSTGRESQL
+  // ----------------------------------------------------
+
+  useEffect(() => {
+    const token = localStorage.getItem("remindme_access_token");
+
+    if (!token) return;
+
+    let cancelled = false;
+
+    const syncReminders = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/api/reminders/sync`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              timezone:
+                Intl.DateTimeFormat().resolvedOptions().timeZone ||
+                "Asia/Kolkata",
+              reminders: tasks,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({}));
+
+          throw new Error(
+            error.detail || `Sync failed: ${response.status}`
+          );
+        }
+
+        const result = await response.json();
+
+        if (!cancelled) {
+          console.log(
+            "RemindMe PostgreSQL sync successful:",
+            result.count
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("RemindMe PostgreSQL sync error:", error);
+        }
+      }
+    };
+
+    const timeout = setTimeout(syncReminders, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [tasks]);
+
+  // ----------------------------------------------------
+  // ENABLE NOTIFICATIONS
+  // ----------------------------------------------------
 
   const enableNotifications = async () => {
     if (!("Notification" in window)) {
@@ -984,19 +988,14 @@ useEffect(() => {
     }
 
     try {
-      const permission =
-        await Notification.requestPermission();
+      const permission = await Notification.requestPermission();
 
       setNotificationPermission(permission);
 
       if (permission === "granted") {
-        new Notification(
-          "RemindMe notifications enabled!",
-          {
-            body:
-              "You will receive alerts when your reminders are due.",
-          }
-        );
+        new Notification("RemindMe notifications enabled!", {
+          body: "You will receive alerts when your reminders are due.",
+        });
       } else if (permission === "denied") {
         alert(
           "Notifications are blocked. Please enable them in your browser settings."
@@ -1007,7 +1006,10 @@ useEffect(() => {
     }
   };
 
+  // ----------------------------------------------------
   // CHECK REMINDERS AND SEND NOTIFICATIONS
+  // ----------------------------------------------------
+
   useEffect(() => {
     if (
       notificationPermission !== "granted" ||
@@ -1017,9 +1019,7 @@ useEffect(() => {
     }
 
     const checkReminders = () => {
-      if (Notification.permission !== "granted") {
-        return;
-      }
+      if (Notification.permission !== "granted") return;
 
       let notifiedOccurrences = [];
       let legacyNotifiedIds = [];
@@ -1059,28 +1059,24 @@ useEffect(() => {
         ) {
           return;
         }
-// Snoozed occurrences are handled by the
-// PostgreSQL background push scheduler.
-if (task.snoozedDate === todayDate) {
-  return;
-}
+
+        // Snoozed occurrences are handled by the backend scheduler.
+        if (task.snoozedDate === todayDate) {
+          return;
+        }
+
         const occurrenceKey = `${task.id}|${todayDate}`;
+
         const wasAlreadyNotified =
           notifiedOccurrences.includes(occurrenceKey);
 
-        // Respect notification records created by the previous
-        // one-time reminder implementation.
         const wasLegacyNotified =
           (!task.repeat || task.repeat === "none") &&
           legacyNotifiedIds.map(String).includes(String(task.id));
 
-        if (wasAlreadyNotified || wasLegacyNotified) {
-          return;
-        }
+        if (wasAlreadyNotified || wasLegacyNotified) return;
 
-        const reminderDate = new Date(
-          `${todayDate}T${task.time}:00`
-        );
+        const reminderDate = new Date(`${todayDate}T${task.time}:00`);
 
         if (
           Number.isNaN(reminderDate.getTime()) ||
@@ -1092,24 +1088,22 @@ if (task.snoozedDate === todayDate) {
         try {
           const isHighPriority = task.priority === "High";
 
-const notification = new Notification(
-  isHighPriority
-    ? `🚨 HIGH PRIORITY: ${task.title}`
-    : `Reminder: ${task.title}`,
-  {
-    body: isHighPriority
-      ? `Important reminder! ${
-          task.description ||
-          `${task.category || "Personal"} task is due now.`
-        }`
-      : task.description ||
-        `${task.category || "Personal"} reminder is due now!`,
-
-    tag: `remindme-${task.id}-${todayDate}`,
-
-    requireInteraction: isHighPriority,
-  }
-);
+          const notification = new Notification(
+            isHighPriority
+              ? `🚨 HIGH PRIORITY: ${task.title}`
+              : `Reminder: ${task.title}`,
+            {
+              body: isHighPriority
+                ? `Important reminder! ${
+                    task.description ||
+                    `${task.category || "Personal"} task is due now.`
+                  }`
+                : task.description ||
+                  `${task.category || "Personal"} reminder is due now!`,
+              tag: `remindme-${task.id}-${todayDate}`,
+              requireInteraction: isHighPriority,
+            }
+          );
 
           notification.onclick = () => {
             window.focus();
@@ -1135,9 +1129,7 @@ const notification = new Notification(
     const interval = window.setInterval(checkReminders, 5000);
 
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        checkReminders();
-      }
+      if (!document.hidden) checkReminders();
     };
 
     window.addEventListener("focus", checkReminders);
@@ -1153,114 +1145,29 @@ const notification = new Notification(
     };
   }, [tasks, notificationPermission]);
 
-  // OPEN FORM TO CREATE A NEW REMINDER
+  // ----------------------------------------------------
+  // CREATE REMINDER
+  // ----------------------------------------------------
 
   const openCreateModal = (date = getToday()) => {
     setEditingTaskId(null);
-    // APPLY A SAVED TEMPLATE
-
-const applyReminderTemplate = (templateId) => {
-  const template = reminderTemplates.find(
-    (item) => String(item.id) === String(templateId)
-  );
-
-  if (!template) return;
-
-  setEditingTaskId(null);
-
-  setNewTask({
-    title: template.title || "",
-    description: template.description || "",
-    date: getToday(),
-    time: template.time || "",
-    category: template.category || "Personal",
-    priority: template.priority || "Medium",
-    repeat: template.repeat || "none",
-  });
-};
-
-// SAVE CURRENT REMINDER AS A TEMPLATE
-
-const saveReminderTemplate = () => {
-  if (!newTask.title.trim()) {
-    alert("Enter a reminder title before saving a template.");
-    return;
-  }
-
-  const name = window.prompt(
-    "Enter a name for this template:",
-    newTask.title.trim()
-  );
-
-  if (name === null) return;
-
-  if (!name.trim()) {
-    alert("Template name cannot be empty.");
-    return;
-  }
-
-  const template = {
-    id: `template-${Date.now()}`,
-    name: name.trim(),
-    title: newTask.title.trim(),
-    description: newTask.description || "",
-    category: newTask.category || "Personal",
-    priority: newTask.priority || "Medium",
-    repeat: newTask.repeat || "none",
-    time: newTask.time || "",
-  };
-
-  setReminderTemplates((previous) => [
-    template,
-    ...previous,
-  ]);
-
-  setSelectedTemplateId(template.id);
-
-  alert("Reminder template saved successfully!");
-};
-
-// DELETE A SAVED TEMPLATE
-
-const deleteReminderTemplate = (templateId) => {
-  const template = reminderTemplates.find(
-    (item) => String(item.id) === String(templateId)
-  );
-
-  if (!template) return;
-
-  const confirmed = window.confirm(
-    `Delete the "${template.name}" template?`
-  );
-
-  if (!confirmed) return;
-
-  setReminderTemplates((previous) =>
-    previous.filter(
-      (item) => String(item.id) !== String(templateId)
-    )
-  );
-
-  setSelectedTemplateId("");
-};
+    setSelectedTemplateId("");
 
     setNewTask({
-      title: "",
-      description: "",
-      date,
-      time: "",
-      category: "Personal",
-      priority: "Medium",
-      repeat: "none",
+      ...emptyTask,
+      date: date || getToday(),
     });
 
     setShowModal(true);
   };
 
-  // OPEN FORM TO EDIT AN EXISTING REMINDER
+  // ----------------------------------------------------
+  // EDIT REMINDER
+  // ----------------------------------------------------
 
   const openEditModal = (task) => {
     setEditingTaskId(task.id);
+    setSelectedTemplateId("");
 
     setNewTask({
       title: task.title || "",
@@ -1275,9 +1182,12 @@ const deleteReminderTemplate = (templateId) => {
     setShowModal(true);
   };
 
-  // SAVE NEW OR EDITED REMINDER
-  const saveTask = (e) => {
-    e.preventDefault();
+  // ----------------------------------------------------
+  // SAVE REMINDER
+  // ----------------------------------------------------
+
+  const saveTask = (event) => {
+    event.preventDefault();
 
     if (!newTask.title.trim()) return;
 
@@ -1294,9 +1204,6 @@ const deleteReminderTemplate = (templateId) => {
         )
       );
 
-      // Editing a recurring reminder updates the whole series.
-      // Clear previous notification records so the new schedule
-      // can notify at its next occurrence.
       try {
         const occurrenceRecords = JSON.parse(
           localStorage.getItem("remindme_notified_occurrences") || "[]"
@@ -1339,21 +1246,15 @@ const deleteReminderTemplate = (templateId) => {
     }
 
     setEditingTaskId(null);
-
-    setNewTask({
-      title: "",
-      description: "",
-      date: getToday(),
-      time: "",
-      category: "Personal",
-      priority: "Medium",
-      repeat: "none",
-    });
-
+    setSelectedTemplateId("");
+    setNewTask({ ...emptyTask });
     setShowModal(false);
   };
 
-  // COMPLETE A ONE-TIME REMINDER OR A SINGLE RECURRING OCCURRENCE
+  // ----------------------------------------------------
+  // COMPLETE REMINDER
+  // ----------------------------------------------------
+
   const toggleTask = (id, occurrenceDate = getToday()) => {
     setTasks((previous) =>
       previous.map((task) => {
@@ -1382,170 +1283,159 @@ const deleteReminderTemplate = (templateId) => {
     );
   };
 
-  // DELETE TASK
+  // ----------------------------------------------------
+  // DELETE REMINDER
+  // ----------------------------------------------------
 
   const deleteTask = (id) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this reminder and all its future repeats?"
     );
 
-    if (confirmDelete) {
-      setTasks((previous) =>
-        previous.filter((task) => task.id !== id)
+    if (!confirmDelete) return;
+
+    setTasks((previous) =>
+      previous.filter((task) => task.id !== id)
+    );
+
+    try {
+      const notifiedIds = JSON.parse(
+        localStorage.getItem("remindme_notified_ids") || "[]"
       );
 
-      try {
-        const notifiedIds = JSON.parse(
-          localStorage.getItem("remindme_notified_ids") || "[]"
-        );
-
-        localStorage.setItem(
-          "remindme_notified_ids",
-          JSON.stringify(
-            notifiedIds.filter(
-              (savedId) => String(savedId) !== String(id)
-            )
+      localStorage.setItem(
+        "remindme_notified_ids",
+        JSON.stringify(
+          notifiedIds.filter(
+            (savedId) => String(savedId) !== String(id)
           )
-        );
+        )
+      );
 
-        const occurrenceRecords = JSON.parse(
+      const occurrenceRecords = JSON.parse(
+        localStorage.getItem("remindme_notified_occurrences") || "[]"
+      );
+
+      localStorage.setItem(
+        "remindme_notified_occurrences",
+        JSON.stringify(
+          occurrenceRecords.filter(
+            (key) => !String(key).startsWith(`${id}|`)
+          )
+        )
+      );
+    } catch (error) {
+      console.error("Unable to update notification records:", error);
+    }
+  };
+
+  // ----------------------------------------------------
+  // SNOOZE REMINDER
+  // ----------------------------------------------------
+
+  const snoozeTask = async (id, minutes) => {
+    const token = localStorage.getItem("remindme_access_token");
+
+    if (!token) {
+      alert("Please log in again.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/reminders/${encodeURIComponent(id)}/snooze`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            minutes: Number(minutes),
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.detail || "Unable to snooze reminder."
+        );
+      }
+
+      const occurrenceKey = `${id}|${result.occurrence_date}`;
+
+      try {
+        const records = JSON.parse(
           localStorage.getItem("remindme_notified_occurrences") || "[]"
         );
 
         localStorage.setItem(
           "remindme_notified_occurrences",
           JSON.stringify(
-            occurrenceRecords.filter(
-              (key) => !String(key).startsWith(`${id}|`)
+            records.filter((key) => key !== occurrenceKey)
+          )
+        );
+
+        const oldIds = JSON.parse(
+          localStorage.getItem("remindme_notified_ids") || "[]"
+        );
+
+        localStorage.setItem(
+          "remindme_notified_ids",
+          JSON.stringify(
+            oldIds.filter(
+              (savedId) => String(savedId) !== String(id)
             )
           )
         );
-      } catch (error) {
+      } catch (storageError) {
         console.error(
-          "Unable to update notification records:",
-          error
+          "Unable to update notification history:",
+          storageError
         );
       }
+
+      setTasks((previous) =>
+        previous.map((task) =>
+          String(task.id) === String(id)
+            ? {
+                ...task,
+                snoozedUntil: result.snoozed_until,
+                snoozedDate: result.occurrence_date,
+              }
+            : task
+        )
+      );
+
+      const displayTime = new Date(
+        result.snoozed_until
+      ).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      alert(
+        `Reminder snoozed for ${minutes} minutes. It will notify you again at ${displayTime}.`
+      );
+    } catch (error) {
+      console.error("Snooze error:", error);
+      alert(error.message);
     }
   };
-  // SNOOZE REMINDER
 
-const snoozeTask = async (id, minutes) => {
-  const token = localStorage.getItem(
-    "remindme_access_token"
-  );
+  // ----------------------------------------------------
+  // NAVIGATION AND CATEGORIES
+  // ----------------------------------------------------
 
-  if (!token) {
-    alert("Please log in again.");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `${API_BASE}/api/reminders/${encodeURIComponent(id)}/snooze`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          minutes: Number(minutes),
-        }),
-      }
-    );
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.detail || "Unable to snooze reminder."
-      );
-    }
-
-    const occurrenceKey =
-      `${id}|${result.occurrence_date}`;
-
-    // Remove the old local notification record.
-    try {
-      const records = JSON.parse(
-        localStorage.getItem(
-          "remindme_notified_occurrences"
-        ) || "[]"
-      );
-
-      localStorage.setItem(
-        "remindme_notified_occurrences",
-        JSON.stringify(
-          records.filter(
-            (key) => key !== occurrenceKey
-          )
-        )
-      );
-
-      const oldIds = JSON.parse(
-        localStorage.getItem(
-          "remindme_notified_ids"
-        ) || "[]"
-      );
-
-      localStorage.setItem(
-        "remindme_notified_ids",
-        JSON.stringify(
-          oldIds.filter(
-            (savedId) => String(savedId) !== String(id)
-          )
-        )
-      );
-
-    } catch (storageError) {
-      console.error(
-        "Unable to update notification history:",
-        storageError
-      );
-    }
-
-    // Update the dashboard immediately.
-    setTasks((previous) =>
-      previous.map((task) =>
-        String(task.id) === String(id)
-          ? {
-              ...task,
-              snoozedUntil: result.snoozed_until,
-              snoozedDate: result.occurrence_date,
-            }
-          : task
-      )
-    );
-
-    const displayTime = new Date(
-      result.snoozed_until
-    ).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    alert(
-      `Reminder snoozed for ${minutes} minutes. It will notify you again at ${displayTime}.`
-    );
-
-  } catch (error) {
-    console.error("Snooze error:", error);
-    alert(error.message);
-  }
-};
-
-  // NAVIGATION
-
- const menuItems = [
-  { name: "Overview", icon: LayoutDashboard },
-  { name: "My Tasks", icon: CheckCircle2 },
-  { name: "Calendar", icon: CalendarDays },
-  { name: "Upcoming", icon: Clock },
-  { name: "Shared Reminders", icon: UserRound },
-];
-
-  // CATEGORIES
+  const menuItems = [
+    { name: "Overview", icon: LayoutDashboard },
+    { name: "My Tasks", icon: CheckCircle2 },
+    { name: "Calendar", icon: CalendarDays },
+    { name: "Upcoming", icon: Clock },
+    { name: "Shared Reminders", icon: UserRound },
+  ];
 
   const categories = [
     { name: "Study", icon: GraduationCap, color: "purple" },
@@ -1554,92 +1444,78 @@ const snoozeTask = async (id, minutes) => {
     { name: "Personal", icon: UserRound, color: "green" },
   ];
 
-  // CURRENT DATE
+  const today = new Date()
+    .toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "2-digit",
+    })
+    .toUpperCase();
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "2-digit",
-  }).toUpperCase();
+  // ----------------------------------------------------
+  // FILTER TASKS
+  // ----------------------------------------------------
 
-// FILTER TASKS
-
-const pageTasks =
-  activePage === "Upcoming"
-    ? tasks.filter(
-        (task) =>
-          !isTaskDoneOnDate(task, getToday()) &&
-          (
-            task.date > getToday() ||
-            (task.repeat && task.repeat !== "none")
-          )
-      )
-    : categories.some(
-        (category) => category.name === activePage
-      )
+  const pageTasks =
+    activePage === "Upcoming"
       ? tasks.filter(
-          (task) => task.category === activePage
+          (task) =>
+            !isTaskDoneOnDate(task, getToday()) &&
+            (task.date > getToday() ||
+              (task.repeat && task.repeat !== "none"))
         )
-      : tasks;
+      : categories.some(
+            (category) => category.name === activePage
+          )
+        ? tasks.filter((task) => task.category === activePage)
+        : tasks;
 
-// Search is global: searching can find reminders from every category.
+  const searchableTasks = searchQuery.trim() ? tasks : pageTasks;
 
-const searchableTasks = searchQuery.trim()
-  ? tasks
-  : pageTasks;
+  const visibleTasks = searchableTasks.filter((task) => {
+    const query = searchQuery.trim().toLowerCase();
 
-const visibleTasks = searchableTasks.filter((task) => {
+    const matchesSearch =
+      !query ||
+      (task.title || "").toLowerCase().includes(query) ||
+      (task.description || "").toLowerCase().includes(query);
 
-  const query = searchQuery.trim().toLowerCase();
+    const matchesCategory =
+      filterCategory === "all" ||
+      task.category === filterCategory;
 
-  const matchesSearch =
-    !query ||
-    (task.title || "").toLowerCase().includes(query) ||
-    (task.description || "").toLowerCase().includes(query);
+    const matchesPriority =
+      filterPriority === "all" ||
+      (task.priority || "Medium").toLowerCase() === filterPriority;
 
-  const matchesCategory =
-    filterCategory === "all" ||
-    task.category === filterCategory;
-
-  const matchesPriority =
-    filterPriority === "all" ||
-    (task.priority || "Medium").toLowerCase() === filterPriority;
-
-  const statusDate =
-    filterDate ||
-    (
-      task.repeat && task.repeat !== "none"
+    const statusDate =
+      filterDate ||
+      (task.repeat && task.repeat !== "none"
         ? getToday()
-        : task.date
+        : task.date);
+
+    const isCompleted = isTaskDoneOnDate(task, statusDate);
+
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "completed" ? isCompleted : !isCompleted);
+
+    const matchesDate =
+      !filterDate ||
+      isTaskScheduledOnDate(task, filterDate);
+
+    return (
+      matchesSearch &&
+      matchesCategory &&
+      matchesPriority &&
+      matchesStatus &&
+      matchesDate
     );
+  });
 
-  const isCompleted = isTaskDoneOnDate(
-    task,
-    statusDate
-  );
-
-  const matchesStatus =
-    filterStatus === "all" ||
-    (
-      filterStatus === "completed"
-        ? isCompleted
-        : !isCompleted
-    );
-
-  const matchesDate =
-    !filterDate ||
-    isTaskScheduledOnDate(task, filterDate);
-
-  return (
-    matchesSearch &&
-    matchesCategory &&
-    matchesPriority &&
-    matchesStatus &&
-    matchesDate
-  );
-});
-
-  // COMPLETED TASKS
+  // ----------------------------------------------------
+  // STATISTICS
+  // ----------------------------------------------------
 
   const completed = tasks.filter((task) =>
     isTaskDoneOnDate(
@@ -1654,13 +1530,15 @@ const visibleTasks = searchableTasks.filter((task) => {
     ? Math.round((completed / tasks.length) * 100)
     : 0;
 
+  // ====================================================
+  // RENDER
+  // ====================================================
+
   return (
     <div className="app-layout">
-
       {/* SIDEBAR */}
 
       <aside className="sidebar">
-
         <div className="brand">
           <div className="brand-icon">
             <Clock size={23} />
@@ -1671,12 +1549,9 @@ const visibleTasks = searchableTasks.filter((task) => {
           </span>
         </div>
 
-        <div className="workspace-label">
-          WORKSPACE
-        </div>
+        <div className="workspace-label">WORKSPACE</div>
 
         <nav className="sidebar-nav">
-
           {menuItems.map((item) => {
             const Icon = item.icon;
 
@@ -1693,7 +1568,6 @@ const visibleTasks = searchableTasks.filter((task) => {
               </button>
             );
           })}
-
         </nav>
 
         <div className="workspace-label category-heading">
@@ -1701,19 +1575,18 @@ const visibleTasks = searchableTasks.filter((task) => {
         </div>
 
         <div className="category-list">
-
           {categories.map((category) => {
             const Icon = category.icon;
 
             return (
               <button
-                className="category-item"
+                className={`category-item ${
+                  activePage === category.name ? "active" : ""
+                }`}
                 key={category.name}
                 onClick={() => setActivePage(category.name)}
               >
-                <span
-                  className={`category-dot ${category.color}`}
-                >
+                <span className={`category-dot ${category.color}`}>
                   <Icon size={16} />
                 </span>
 
@@ -1721,141 +1594,146 @@ const visibleTasks = searchableTasks.filter((task) => {
               </button>
             );
           })}
-
         </div>
 
         <div className="sidebar-bottom">
+          <button
+            type="button"
+            className="upgrade-card remy-sidebar-card"
+            onClick={() =>
+              window.dispatchEvent(new Event("remy:open"))
+            }
+          >
+            <div className="upgrade-icon">
+              <Sparkles size={21} />
+            </div>
 
-         <button
-  type="button"
-  className="upgrade-card remy-sidebar-card"
-  onClick={() =>
-    window.dispatchEvent(new Event("remy:open"))
-  }
->
-  <div className="upgrade-icon">
-    <Sparkles size={21} />
-  </div>
+            <h4>A little more organized?</h4>
 
-  <h4>A little more organized?</h4>
+            <p>Your goals are closer than you think.</p>
 
-  <p>
-    Your goals are closer than you think.
-  </p>
-
-  <span className="remy-sidebar-link">
-    Chat with Remy
-    <ArrowUpRight size={14} />
-  </span>
-</button>
+            <span className="remy-sidebar-link">
+              Chat with Remy
+              <ArrowUpRight size={14} />
+            </span>
+          </button>
 
           <button
-            className="nav-item settings-item"
-            onClick={() => setActivePage("Settings")}
+            className={`nav-item settings-item ${
+              showSettingsModal ? "active" : ""
+            }`}
+            onClick={() => {
+              setShowProfileMenu(false);
+              setShowSettingsModal(true);
+            }}
           >
             <Settings size={19} />
             Settings
           </button>
 
-         <div className="profile profile-menu-container">
+          <div className="profile profile-menu-container">
+            <div className="avatar">{profileInitial}</div>
 
-  <div className="avatar">
-    {profileInitial}
-  </div>
+            <div className="profile-info">
+              <strong>{profileUser.name}</strong>
+              <span>
+                {profileUser.email || "Personal workspace"}
+              </span>
+            </div>
 
-  <div className="profile-info">
-    <strong>{profileUser.name}</strong>
-    <span>{profileUser.email || "Personal workspace"}</span>
-  </div>
+            <button
+              type="button"
+              className="profile-menu-trigger"
+              title="Account options"
+              aria-label="Open account options"
+              aria-expanded={showProfileMenu}
+              onClick={() =>
+                setShowProfileMenu((previous) => !previous)
+              }
+            >
+              <MoreHorizontal size={21} />
+            </button>
 
-  <button
-    type="button"
-    className="profile-menu-trigger"
-    title="Account options"
-    aria-label="Open account options"
-    aria-expanded={showProfileMenu}
-    onClick={() => setShowProfileMenu((previous) => !previous)}
-  >
-    <MoreHorizontal size={21} />
-  </button>
+            {showProfileMenu && (
+              <>
+                <button
+                  type="button"
+                  className="profile-menu-backdrop"
+                  aria-label="Close account menu"
+                  onClick={() => setShowProfileMenu(false)}
+                />
 
-  {showProfileMenu && (
-    <>
-      <button
-        type="button"
-        className="profile-menu-backdrop"
-        aria-label="Close account menu"
-        onClick={() => setShowProfileMenu(false)}
-      />
+                <div className="profile-dropdown">
+                  <div className="profile-dropdown-header">
+                    <div className="avatar">{profileInitial}</div>
 
-      <div className="profile-dropdown">
+                    <div>
+                      <strong>{profileUser.name}</strong>
+                      <span>{profileUser.email}</span>
+                    </div>
+                  </div>
 
-        <div className="profile-dropdown-header">
-          <div className="avatar">
-            {profileInitial}
+                  <div className="profile-dropdown-divider" />
+
+                  <button
+                    type="button"
+                    onClick={() => handleProfileAction("profile")}
+                  >
+                    <User size={17} />
+                    My profile
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleProfileAction("settings")}
+                  >
+                    <Settings size={17} />
+                    Settings
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleProfileAction("notifications")
+                    }
+                  >
+                    <Bell size={17} />
+                    Enable notifications
+                  </button>
+
+                  <div className="profile-dropdown-divider" />
+
+                  <button
+                    type="button"
+                    className="profile-logout"
+                    onClick={() => handleProfileAction("logout")}
+                  >
+                    <LogOut size={17} />
+                    Log out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-
-          <div>
-            <strong>{profileUser.name}</strong>
-            <span>{profileUser.email}</span>
-          </div>
-        </div>
-
-        <div className="profile-dropdown-divider" />
-
-        <button
-          type="button"
-          onClick={() => handleProfileAction("profile")}
-        >
-          <User size={17} />
-          My profile
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleProfileAction("settings")}
-        >
-          <Settings size={17} />
-          Settings
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleProfileAction("notifications")}
-        >
-          <Bell size={17} />
-          Enable notifications
-        </button>
-
-        <div className="profile-dropdown-divider" />
-
-        <button
-          type="button"
-          className="profile-logout"
-          onClick={() => handleProfileAction("logout")}
-        >
-          <LogOut size={17} />
-          Log out
-        </button>
-
-      </div>
-    </>
-  )}
-
-</div>
-
         </div>
       </aside>
 
       {/* MAIN CONTENT */}
 
       <main className="main-content">
-
         {/* TOPBAR */}
 
         <header className="topbar">
-
-          <button className="mobile-menu">
+          <button
+            className="mobile-menu"
+            type="button"
+            onClick={() =>
+              document
+                .querySelector(".sidebar")
+                ?.classList.toggle("sidebar-open")
+            }
+            aria-label="Toggle navigation"
+          >
             <Menu size={22} />
           </button>
 
@@ -1866,18 +1744,19 @@ const visibleTasks = searchableTasks.filter((task) => {
           </div>
 
           <div className="top-actions">
-
-           <button
-  type="button"
-  className="icon-button"
-  title="Search reminders"
-  aria-label="Search reminders"
-  onClick={() =>
-    document.getElementById("remindme-search")?.focus()
-  }
->
-  <Search size={19} />
-</button>
+            <button
+              type="button"
+              className="icon-button"
+              title="Search reminders"
+              aria-label="Search reminders"
+              onClick={() =>
+                document
+                  .getElementById("remindme-search")
+                  ?.focus()
+              }
+            >
+              <Search size={19} />
+            </button>
 
             <button
               className="icon-button notification"
@@ -1890,51 +1769,45 @@ const visibleTasks = searchableTasks.filter((task) => {
               {notificationPermission === "granted" && (
                 <span></span>
               )}
-
             </button>
 
-           <button
-  type="button"
-  className="top-avatar"
-  title={profileUser.name}
-  onClick={() => setShowProfileMenu((previous) => !previous)}
->
-  {profileInitial}
-</button>
-
+            {/* Top avatar opens profile directly. */}
+            <button
+              type="button"
+              className="top-avatar"
+              title={profileUser.name}
+              aria-label="Open my profile"
+              onClick={() => {
+                setShowProfileMenu(false);
+                setProfileUser(getSignedInUser());
+                setShowProfileModal(true);
+              }}
+            >
+              {profileInitial}
+            </button>
           </div>
         </header>
 
         {/* PAGE CONTENT */}
 
         <div className="dashboard-container">
-
           {activePage === "Calendar" ? (
-
-         <CalendarView
-  tasks={tasks}
-  onAdd={openCreateModal}
-  onEdit={openEditModal}
-  onDelete={deleteTask}
-  onToggle={toggleTask}
-/>
-
-) : activePage === "Shared Reminders" ? (
-
-  <SharedReminders />
-
-) : (
-
+            <CalendarView
+              tasks={tasks}
+              onAdd={openCreateModal}
+              onEdit={openEditModal}
+              onDelete={deleteTask}
+              onToggle={toggleTask}
+            />
+          ) : activePage === "Shared Reminders" ? (
+            <SharedReminders />
+          ) : (
             <>
-
               {/* WELCOME */}
 
               <section className="welcome-section">
-
                 <div>
-                  <div className="date-label">
-                    {today}
-                  </div>
+                  <div className="date-label">{today}</div>
 
                   <h1>
                     Make today <span>count.</span>
@@ -1952,13 +1825,11 @@ const visibleTasks = searchableTasks.filter((task) => {
 
                   <span>One day at a time.</span>
                 </div>
-
               </section>
 
               {/* STATISTICS */}
 
               <section className="stats-grid">
-
                 <div className="stat-card">
                   <div className="stat-top">
                     <span>Today's tasks</span>
@@ -1970,8 +1841,8 @@ const visibleTasks = searchableTasks.filter((task) => {
 
                   <h2>
                     {
-                      tasks.filter(
-                        (task) => isTaskScheduledOnDate(task, getToday())
+                      tasks.filter((task) =>
+                        isTaskScheduledOnDate(task, getToday())
                       ).length
                     }
                   </h2>
@@ -1989,7 +1860,6 @@ const visibleTasks = searchableTasks.filter((task) => {
                   </div>
 
                   <h2>{completed}</h2>
-
                   <p>Look at you go!</p>
                 </div>
 
@@ -2003,7 +1873,6 @@ const visibleTasks = searchableTasks.filter((task) => {
                   </div>
 
                   <h2>{tasks.length - completed}</h2>
-
                   <p>You've got this.</p>
                 </div>
 
@@ -2017,20 +1886,15 @@ const visibleTasks = searchableTasks.filter((task) => {
                   </div>
 
                   <h2>{progress}%</h2>
-
                   <p>Keep the momentum!</p>
                 </div>
-
               </section>
 
               {/* TASKS AND SIDE PANEL */}
 
               <section className="dashboard-grid">
-
                 <div className="tasks-panel">
-
                   <div className="section-header">
-
                     <div>
                       <h2>
                         {activePage === "Overview"
@@ -2038,9 +1902,7 @@ const visibleTasks = searchableTasks.filter((task) => {
                           : activePage}
                       </h2>
 
-                      <p>
-                        Small steps make big differences.
-                      </p>
+                      <p>Small steps make big differences.</p>
                     </div>
 
                     <button
@@ -2050,99 +1912,93 @@ const visibleTasks = searchableTasks.filter((task) => {
                       <Plus size={18} />
                       Add task
                     </button>
-
                   </div>
 
                   <div className="task-progress">
-                    {/* SMART SEARCH AND FILTERS */}
+                    {/* SEARCH AND FILTERS */}
 
-<div className="reminder-filter-bar">
+                    <div className="reminder-filter-bar">
+                      <div className="reminder-search-field">
+                        <Search size={18} />
 
-  <div className="reminder-search-field">
+                        <input
+                          id="remindme-search"
+                          type="search"
+                          placeholder="Search reminders..."
+                          value={searchQuery}
+                          onChange={(event) =>
+                            setSearchQuery(event.target.value)
+                          }
+                        />
+                      </div>
 
-    <Search size={18} />
+                      <select
+                        value={filterCategory}
+                        onChange={(event) =>
+                          setFilterCategory(event.target.value)
+                        }
+                        aria-label="Filter by category"
+                      >
+                        <option value="all">All categories</option>
 
-    <input
-      id="remindme-search"
-      type="search"
-      placeholder="Search reminders..."
-      value={searchQuery}
-      onChange={(event) =>
-        setSearchQuery(event.target.value)
-      }
-    />
+                        {categories.map((category) => (
+                          <option
+                            key={category.name}
+                            value={category.name}
+                          >
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
 
-  </div>
+                      <select
+                        value={filterPriority}
+                        onChange={(event) =>
+                          setFilterPriority(event.target.value)
+                        }
+                        aria-label="Filter by priority"
+                      >
+                        <option value="all">All priorities</option>
+                        <option value="high">High priority</option>
+                        <option value="medium">Medium priority</option>
+                        <option value="low">Low priority</option>
+                      </select>
 
-  <select
-    value={filterCategory}
-    onChange={(event) =>
-      setFilterCategory(event.target.value)
-    }
-    aria-label="Filter by category"
-  >
-    <option value="all">All categories</option>
+                      <select
+                        value={filterStatus}
+                        onChange={(event) =>
+                          setFilterStatus(event.target.value)
+                        }
+                        aria-label="Filter by status"
+                      >
+                        <option value="all">All statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                      </select>
 
-    {categories.map((category) => (
-      <option
-        key={category.name}
-        value={category.name}
-      >
-        {category.name}
-      </option>
-    ))}
+                      <input
+                        type="date"
+                        value={filterDate}
+                        onChange={(event) =>
+                          setFilterDate(event.target.value)
+                        }
+                        aria-label="Filter by date"
+                      />
 
-  </select>
-
-  <select
-    value={filterPriority}
-    onChange={(event) =>
-      setFilterPriority(event.target.value)
-    }
-    aria-label="Filter by priority"
-  >
-    <option value="all">All priorities</option>
-    <option value="high">High priority</option>
-    <option value="medium">Medium priority</option>
-    <option value="low">Low priority</option>
-  </select>
-
-  <select
-    value={filterStatus}
-    onChange={(event) =>
-      setFilterStatus(event.target.value)
-    }
-    aria-label="Filter by status"
-  >
-    <option value="all">All statuses</option>
-    <option value="pending">Pending</option>
-    <option value="completed">Completed</option>
-  </select>
-
-  <input
-    type="date"
-    value={filterDate}
-    onChange={(event) =>
-      setFilterDate(event.target.value)
-    }
-    aria-label="Filter by date"
-  />
-
-  <button
-    type="button"
-    className="clear-reminder-filters"
-    onClick={() => {
-      setSearchQuery("");
-      setFilterCategory("all");
-      setFilterPriority("all");
-      setFilterStatus("all");
-      setFilterDate("");
-    }}
-  >
-    Clear filters
-  </button>
-
-</div>
+                      <button
+                        type="button"
+                        className="clear-reminder-filters"
+                        onClick={() => {
+                          setSearchQuery("");
+                          setFilterCategory("all");
+                          setFilterPriority("all");
+                          setFilterStatus("all");
+                          setFilterDate("");
+                        }}
+                      >
+                        Clear filters
+                      </button>
+                    </div>
 
                     <div className="progress-label">
                       <span>Daily progress</span>
@@ -2155,229 +2011,184 @@ const visibleTasks = searchableTasks.filter((task) => {
                     <div className="progress-track">
                       <div
                         className="progress-fill"
-                        style={{
-                          width: `${progress}%`,
-                        }}
+                        style={{ width: `${progress}%` }}
                       ></div>
                     </div>
-
                   </div>
 
                   {/* TASK LIST */}
 
                   <div className="task-list">
-
                     {visibleTasks.length === 0 ? (
-
                       <div className="empty-state">
                         <CheckCircle2 size={35} />
                         <h3>No reminders found</h3>
-                        <p>
-                          Create a reminder to get started.
-                        </p>
+                        <p>Create a reminder to get started.</p>
                       </div>
-
                     ) : (
+                      visibleTasks.map((task) => {
+                        const taskStatusDate =
+                          task.repeat && task.repeat !== "none"
+                            ? getToday()
+                            : task.date;
 
-                      visibleTasks.map((task) => (
+                        const taskCompleted = isTaskDoneOnDate(
+                          task,
+                          taskStatusDate
+                        );
 
-                        <div
-                          className={`task-row ${
-                            isTaskDoneOnDate(
-                              task,
-                              task.repeat && task.repeat !== "none"
-                                ? getToday()
-                                : task.date
-                            )
-                              ? "task-done"
-                              : ""
-                          }`}
-                          key={task.id}
-                        >
-
-                          <button
-                            className={`task-checkbox ${
-                              isTaskDoneOnDate(
-                                task,
-                                task.repeat && task.repeat !== "none"
-                                  ? getToday()
-                                  : task.date
-                              )
-                                ? "checked"
-                                : ""
+                        return (
+                          <div
+                            className={`task-row ${
+                              taskCompleted ? "task-done" : ""
                             }`}
-                            onClick={() =>
-                              toggleTask(
-                                task.id,
-                                task.repeat && task.repeat !== "none"
-                                  ? getToday()
-                                  : task.date
-                              )
-                            }
+                            key={task.id}
                           >
-                            {isTaskDoneOnDate(
-                              task,
-                              task.repeat && task.repeat !== "none"
-                                ? getToday()
-                                : task.date
-                            ) && (
-                              <CheckCircle2 size={19} />
-                            )}
-                          </button>
-
-                          <div className="task-details">
-
-                            <h4>{task.title}</h4>
-
-                            {task.description && (
-                              <p className="task-description">
-                                {task.description}
-                              </p>
-                            )}
-
-                            <div className="task-meta">
-                              <span>{task.category}</span>
-                              <span className="meta-dot">·</span>
-                              <span>
-                                {task.date || "No date"}
-                              </span>
-                              <span className="meta-dot">·</span>
-                              <span>
-                                {formatTime(task.time)}
-                              </span>
-                              {task.repeat && task.repeat !== "none" && (
-                                <>
-                                  <span className="meta-dot">·</span>
-                                  <span>Repeats {task.repeat}</span>
-                                </>
+                            <button
+                              className={`task-checkbox ${
+                                taskCompleted ? "checked" : ""
+                              }`}
+                              onClick={() =>
+                                toggleTask(task.id, taskStatusDate)
+                              }
+                              aria-label={
+                                taskCompleted
+                                  ? "Mark as incomplete"
+                                  : "Mark as complete"
+                              }
+                            >
+                              {taskCompleted && (
+                                <CheckCircle2 size={19} />
                               )}
+                            </button>
+
+                            <div className="task-details">
+                              <h4>{task.title}</h4>
+
+                              {task.description && (
+                                <p className="task-description">
+                                  {task.description}
+                                </p>
+                              )}
+
+                              <div className="task-meta">
+                                <span>{task.category}</span>
+                                <span className="meta-dot">·</span>
+                                <span>{task.date || "No date"}</span>
+                                <span className="meta-dot">·</span>
+                                <span>{formatTime(task.time)}</span>
+
+                                {task.repeat &&
+                                  task.repeat !== "none" && (
+                                    <>
+                                      <span className="meta-dot">·</span>
+                                      <span>
+                                        Repeats {task.repeat}
+                                      </span>
+                                    </>
+                                  )}
+                              </div>
+
+                              <SubtasksPanel reminderId={task.id} />
+                              <AttachmentPanel reminderId={task.id} />
+                              <FocusMode task={task} />
                             </div>
-                          <SubtasksPanel reminderId={task.id} />
 
-<AttachmentPanel reminderId={task.id} />
+                            <span
+                              className={`priority ${
+                                (task.priority || "Medium").toLowerCase()
+                              }`}
+                            >
+                              {task.priority}
+                            </span>
 
-<FocusMode task={task} />
+                            {task.time && (
+                              <details className="task-snooze-menu">
+                                <summary title="Snooze reminder">
+                                  <Clock size={16} />
+                                </summary>
+
+                                <div className="task-snooze-options">
+                                  {[5, 10, 30, 60].map((minutes) => (
+                                    <button
+                                      type="button"
+                                      key={minutes}
+                                      onClick={(event) => {
+                                        event.currentTarget.closest(
+                                          "details"
+                                        ).open = false;
+
+                                        snoozeTask(task.id, minutes);
+                                      }}
+                                    >
+                                      {minutes} minutes
+                                    </button>
+                                  ))}
+                                </div>
+                              </details>
+                            )}
+
+                            <button
+                              className="task-more"
+                              onClick={() => openEditModal(task)}
+                              title="Edit reminder"
+                            >
+                              <Pencil size={16} />
+                            </button>
+
+                            <ShareReminderButton reminder={task} />
+
+                            <button
+                              className="task-more"
+                              onClick={() => deleteTask(task.id)}
+                              title="Delete reminder"
+                            >
+                              <Trash2 size={17} />
+                            </button>
                           </div>
-
-                          <span
-                            className={`priority ${
-                              (task.priority || "Medium").toLowerCase()
-                            }`}
-                          >
-                            {task.priority}
-                          </span>
-                          {task.time && (
-  <details className="task-snooze-menu">
-
-    <summary title="Snooze reminder">
-      <Clock size={16} />
-    </summary>
-
-    <div className="task-snooze-options">
-
-      {[5, 10, 30, 60].map((minutes) => (
-        <button
-          type="button"
-          key={minutes}
-          onClick={(event) => {
-            event.currentTarget.closest(
-              "details"
-            ).open = false;
-
-            snoozeTask(task.id, minutes);
-          }}
-        >
-          {minutes} minutes
-        </button>
-      ))}
-
-    </div>
-
-  </details>
-)}
-
-                          <button
-                            className="task-more"
-                            onClick={() =>
-                              openEditModal(task)
-                            }
-                            title="Edit reminder"
-                          >
-                            <Pencil size={16} />
-                          </button>
-                          <ShareReminderButton reminder={task} />
-
-                          <button
-                            className="task-more"
-                            onClick={() =>
-                              deleteTask(task.id)
-                            }
-                            title="Delete reminder"
-                          >
-                            <Trash2 size={17} />
-                          </button>
-
-                        </div>
-
-                      ))
-
+                        );
+                      })
                     )}
-
                   </div>
 
                   <button
                     className="view-all"
-                    onClick={() =>
-                      setActivePage("My Tasks")
-                    }
+                    onClick={() => setActivePage("My Tasks")}
                   >
                     View all tasks
                     <ArrowUpRight size={16} />
                   </button>
-
                 </div>
 
                 {/* RIGHT PANEL */}
 
                 <div className="right-column">
-
                   <div className="motivation-card">
-
                     <div className="motivation-top">
                       <Sparkles size={19} />
                       A LITTLE REMINDER
                     </div>
 
                     <h2>
-                      You don't have to do it all.
-                      Just start somewhere.
+                      You don't have to do it all. Just start somewhere.
                     </h2>
 
                     <div className="motivation-footer">
-                      <span>
-                        Keep going, you're doing great.
-                      </span>
-
+                      <span>Keep going, you're doing great.</span>
                       <div className="heart">♥</div>
                     </div>
-
                   </div>
 
                   {/* UPCOMING REMINDERS */}
 
                   <div className="upcoming-panel">
-
                     <div className="section-header">
-
                       <div>
                         <h2>Coming up</h2>
-                        <p>
-                          Don't let these slip away.
-                        </p>
+                        <p>Don't let these slip away.</p>
                       </div>
 
                       <CalendarDays size={20} />
-
                     </div>
 
                     {tasks
@@ -2387,17 +2198,18 @@ const visibleTasks = searchableTasks.filter((task) => {
                       }))
                       .filter((task) => task.nextOccurrenceDate)
                       .sort((a, b) => {
-                        const dateA =
-                          `${a.nextOccurrenceDate}T${a.time || "23:59"}`;
+                        const dateA = `${a.nextOccurrenceDate}T${
+                          a.time || "23:59"
+                        }`;
 
-                        const dateB =
-                          `${b.nextOccurrenceDate}T${b.time || "23:59"}`;
+                        const dateB = `${b.nextOccurrenceDate}T${
+                          b.time || "23:59"
+                        }`;
 
                         return dateA.localeCompare(dateB);
                       })
                       .slice(0, 3)
                       .map((task) => {
-
                         const eventDate = fromISODate(
                           task.nextOccurrenceDate
                         );
@@ -2407,11 +2219,8 @@ const visibleTasks = searchableTasks.filter((task) => {
                             className="upcoming-event"
                             key={task.id}
                           >
-
                             <div className="event-date purple-event">
-                              <strong>
-                                {eventDate.getDate()}
-                              </strong>
+                              <strong>{eventDate.getDate()}</strong>
 
                               <span>
                                 {eventDate
@@ -2426,171 +2235,162 @@ const visibleTasks = searchableTasks.filter((task) => {
                               <h4>{task.title}</h4>
 
                               <p>
-                                {task.category} ·{" "}
-                                {formatTime(task.time)}
+                                {task.category} · {formatTime(task.time)}
                               </p>
                             </div>
-
                           </div>
                         );
                       })}
-
                   </div>
-
                 </div>
-
               </section>
 
               <footer className="dashboard-footer">
-                <span>
-                  Made for your everyday moments.
-                </span>
-
+                <span>Made for your everyday moments.</span>
                 <span>RemindMe. © 2026</span>
               </footer>
-
             </>
-
           )}
-
         </div>
-
       </main>
-{/* PROFILE MODAL */}
-{showProfileModal && (
-  <div
-    className="account-modal-overlay"
-    onClick={(event) => {
-      if (event.target === event.currentTarget) {
-        setShowProfileModal(false);
-      }
-    }}
-  >
-    <div className="account-modal">
-      <div className="account-modal-header">
-        <h2>My Profile</h2>
-        <button
-          type="button"
-          onClick={() => setShowProfileModal(false)}
-        >
-          ✕
-        </button>
-      </div>
 
-      <div className="account-profile-avatar">
-        {profileInitial}
-      </div>
+      {/* PROFILE MODAL */}
 
-      <div className="account-profile-details">
-        <label>Name</label>
-        <p>{profileUser.name || "My Account"}</p>
-
-        <label>Email</label>
-        <p>{profileUser.email || "No email available"}</p>
-      </div>
-
-      <button
-        type="button"
-        className="account-modal-close"
-        onClick={() => setShowProfileModal(false)}
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
-
-{/* SETTINGS MODAL */}
-{showSettingsModal && (
-  <div
-    className="account-modal-overlay"
-    onClick={(event) => {
-      if (event.target === event.currentTarget) {
-        setShowSettingsModal(false);
-      }
-    }}
-  >
-    <div className="account-modal">
-      <div className="account-modal-header">
-        <h2>Settings</h2>
-        <button
-          type="button"
-          onClick={() => setShowSettingsModal(false)}
-        >
-          ✕
-        </button>
-      </div>
-
-      <div className="account-setting-item">
-        <div>
-          <strong>Browser notifications</strong>
-          <p>
-            {notificationPermission === "granted"
-              ? "Notifications are enabled."
-              : notificationPermission === "denied"
-              ? "Notifications are blocked in your browser."
-              : notificationPermission === "unsupported"
-              ? "Your browser does not support notifications."
-              : "Notifications have not been enabled yet."}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="account-modal-action"
-          onClick={enableNotifications}
-          disabled={
-            notificationPermission === "unsupported" ||
-            notificationPermission === "granted" ||
-            notificationPermission === "denied"
-          }
-        >
-          {notificationPermission === "granted"
-            ? "Enabled"
-            : notificationPermission === "denied"
-            ? "Blocked"
-            : "Enable"}
-        </button>
-      </div>
-
-      <div className="account-setting-item">
-        <div>
-          <strong>Account</strong>
-          <p>{profileUser.email || "Personal workspace"}</p>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        className="account-modal-close"
-        onClick={() => setShowSettingsModal(false)}
-      >
-        Close
-      </button>
-    </div>
-  </div>
-)}
-      {/* CREATE / EDIT REMINDER MODAL */}
-
-      {showModal && (
-
+      {showProfileModal && (
         <div
-          className="modal-overlay"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowModal(false);
-              setEditingTaskId(null);
+          className="account-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowProfileModal(false);
             }
           }}
         >
+          <div className="account-modal">
+            <div className="account-modal-header">
+              <h2>My Profile</h2>
 
-          <form
-            className="task-modal"
-            onSubmit={saveTask}
-          >
+              <button
+                type="button"
+                onClick={() => setShowProfileModal(false)}
+                aria-label="Close profile"
+              >
+                ✕
+              </button>
+            </div>
 
+            <div className="account-profile-avatar">
+              {profileInitial}
+            </div>
+
+            <div className="account-profile-details">
+              <label>Name</label>
+              <p>{profileUser.name || "My Account"}</p>
+
+              <label>Email</label>
+              <p>{profileUser.email || "No email available"}</p>
+            </div>
+
+            <button
+              type="button"
+              className="account-modal-close"
+              onClick={() => setShowProfileModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SETTINGS MODAL */}
+
+      {showSettingsModal && (
+        <div
+          className="account-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowSettingsModal(false);
+            }
+          }}
+        >
+          <div className="account-modal">
+            <div className="account-modal-header">
+              <h2>Settings</h2>
+
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(false)}
+                aria-label="Close settings"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="account-setting-item">
+              <div>
+                <strong>Browser notifications</strong>
+
+                <p>
+                  {notificationPermission === "granted"
+                    ? "Notifications are enabled."
+                    : notificationPermission === "denied"
+                      ? "Notifications are blocked in your browser."
+                      : notificationPermission === "unsupported"
+                        ? "Your browser does not support notifications."
+                        : "Notifications have not been enabled yet."}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="account-modal-action"
+                onClick={enableNotifications}
+                disabled={
+                  notificationPermission === "unsupported" ||
+                  notificationPermission === "granted" ||
+                  notificationPermission === "denied"
+                }
+              >
+                {notificationPermission === "granted"
+                  ? "Enabled"
+                  : notificationPermission === "denied"
+                    ? "Blocked"
+                    : "Enable"}
+              </button>
+            </div>
+
+            <div className="account-setting-item">
+              <div>
+                <strong>Account</strong>
+                <p>{profileUser.email || "Personal workspace"}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="account-modal-close"
+              onClick={() => setShowSettingsModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE / EDIT REMINDER MODAL */}
+
+      {showModal && (
+        <div
+          className="modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowModal(false);
+              setEditingTaskId(null);
+              setSelectedTemplateId("");
+            }
+          }}
+        >
+          <form className="task-modal" onSubmit={saveTask}>
             <div className="modal-header">
-
               <h2>
                 {editingTaskId !== null
                   ? "Edit reminder"
@@ -2602,53 +2402,108 @@ const visibleTasks = searchableTasks.filter((task) => {
                 onClick={() => {
                   setShowModal(false);
                   setEditingTaskId(null);
+                  setSelectedTemplateId("");
                 }}
+                aria-label="Close reminder form"
               >
                 ✕
               </button>
-
             </div>
 
-           <label>Reminder title *</label>
+            {/* TEMPLATE SELECTOR */}
 
-<input
-  type="text"
-  placeholder="What do you need to remember?"
-  value={newTask.title}
-  onChange={(e) =>
-    setNewTask({
-      ...newTask,
-      title: e.target.value,
-    })
-  }
-  required
-  autoFocus
-/>
+            {editingTaskId === null && (
+              <div className="reminder-template-section">
+                <label htmlFor="reminder-template-select">
+                  Start with a template
+                </label>
 
-<VoiceInput
-  onTranscript={(transcript) => {
-    setNewTask((previous) => ({
-      ...previous,
-      title: transcript,
-    }));
-  }}
-/>
+                <div className="reminder-template-controls">
+                  <select
+                    id="reminder-template-select"
+                    value={selectedTemplateId}
+                    onChange={(event) =>
+                      applyReminderTemplate(event.target.value)
+                    }
+                  >
+                    <option value="">Choose a template</option>
+
+                    {reminderTemplates.map((template) => (
+                      <option
+                        key={template.id}
+                        value={template.id}
+                      >
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    className="template-save-button"
+                    onClick={saveReminderTemplate}
+                    title="Save current form as a template"
+                  >
+                    <Plus size={15} />
+                    Save template
+                  </button>
+                </div>
+
+                {selectedTemplateId && (
+                  <button
+                    type="button"
+                    className="template-delete-button"
+                    onClick={() =>
+                      deleteReminderTemplate(selectedTemplateId)
+                    }
+                  >
+                    <Trash2 size={14} />
+                    Delete selected template
+                  </button>
+                )}
+              </div>
+            )}
+
+            <label>Reminder title *</label>
+
+            <input
+              type="text"
+              placeholder="What do you need to remember?"
+              value={newTask.title}
+              onChange={(event) =>
+                setNewTask({
+                  ...newTask,
+                  title: event.target.value,
+                })
+              }
+              required
+              autoFocus
+            />
+
+            <VoiceInput
+              onTranscript={(transcript) => {
+                setNewTask((previous) => ({
+                  ...previous,
+                  title: transcript,
+                }));
+              }}
+            />
+
             <label>Description</label>
 
             <textarea
               placeholder="Add some details (optional)"
               value={newTask.description}
-              onChange={(e) =>
+              onChange={(event) =>
                 setNewTask({
                   ...newTask,
-                  description: e.target.value,
+                  description: event.target.value,
                 })
               }
               rows="3"
             />
 
             <div className="form-row">
-
               <div>
                 <label>Date *</label>
 
@@ -2656,10 +2511,10 @@ const visibleTasks = searchableTasks.filter((task) => {
                   type="date"
                   value={newTask.date}
                   min={getToday()}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setNewTask({
                       ...newTask,
-                      date: e.target.value,
+                      date: event.target.value,
                     })
                   }
                   required
@@ -2672,28 +2527,26 @@ const visibleTasks = searchableTasks.filter((task) => {
                 <input
                   type="time"
                   value={newTask.time}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setNewTask({
                       ...newTask,
-                      time: e.target.value,
+                      time: event.target.value,
                     })
                   }
                 />
               </div>
-
             </div>
 
             <div className="form-row">
-
               <div>
                 <label>Category</label>
 
                 <select
                   value={newTask.category}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setNewTask({
                       ...newTask,
-                      category: e.target.value,
+                      category: event.target.value,
                     })
                   }
                 >
@@ -2709,10 +2562,10 @@ const visibleTasks = searchableTasks.filter((task) => {
 
                 <select
                   value={newTask.priority}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setNewTask({
                       ...newTask,
-                      priority: e.target.value,
+                      priority: event.target.value,
                     })
                   }
                 >
@@ -2721,18 +2574,18 @@ const visibleTasks = searchableTasks.filter((task) => {
                   <option value="High">High</option>
                 </select>
               </div>
-
             </div>
 
             <div className="form-row">
               <div>
                 <label>Repeat</label>
+
                 <select
                   value={newTask.repeat || "none"}
-                  onChange={(e) =>
+                  onChange={(event) =>
                     setNewTask({
                       ...newTask,
-                      repeat: e.target.value,
+                      repeat: event.target.value,
                     })
                   }
                 >
@@ -2742,8 +2595,11 @@ const visibleTasks = searchableTasks.filter((task) => {
                   <option value="monthly">Every month</option>
                 </select>
               </div>
+
               <div className="repeat-help">
-                <span>Repeating reminders continue until you delete them.</span>
+                <span>
+                  Repeating reminders continue until you delete them.
+                </span>
               </div>
             </div>
 
@@ -2751,21 +2607,19 @@ const visibleTasks = searchableTasks.filter((task) => {
               className="add-button modal-submit"
               type="submit"
             >
-              {editingTaskId !== null
-                ? <Pencil size={18} />
-                : <Plus size={18} />}
+              {editingTaskId !== null ? (
+                <Pencil size={18} />
+              ) : (
+                <Plus size={18} />
+              )}
 
               {editingTaskId !== null
                 ? "Save changes"
                 : "Create reminder"}
             </button>
-
           </form>
-
         </div>
-
       )}
-
     </div>
   );
 }
