@@ -236,7 +236,7 @@ IMPORTANT RULES:
     })
 
     # --------------------------------------------------
-    # GROQ REQUEST
+    # GROQ REQUEST PAYLOAD
     # --------------------------------------------------
 
     payload = {
@@ -249,17 +249,21 @@ IMPORTANT RULES:
 
     body = json.dumps(payload).encode("utf-8")
 
-   request = urllib.request.Request(
-    GROQ_URL,
-    data=json.dumps(payload).encode("utf-8"),
-    headers={
-        "Authorization": f"Bearer {groq_api_key}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "User-Agent": "RemindMe/1.0",
-    },
-    method="POST",
-)
+    # --------------------------------------------------
+    # CREATE HTTP REQUEST
+    # --------------------------------------------------
+
+    ai_request = urllib.request.Request(
+        GROQ_URL,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {groq_api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "RemindMe/1.0",
+        },
+        method="POST",
+    )
 
     # --------------------------------------------------
     # CALL GROQ
@@ -309,6 +313,7 @@ IMPORTANT RULES:
     except urllib.error.HTTPError as error:
 
         try:
+
             error_body = error.read().decode(
                 "utf-8",
                 errors="replace"
