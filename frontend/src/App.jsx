@@ -5,6 +5,8 @@ import FocusMode from "./FocusMode";
 import AttachmentPanel from "./AttachmentPanel";
 import VoiceInput from "./VoiceInput";
 import "./App.css";
+import InstallPrompt from "./InstallPrompt";
+import "./PremiumTheme.css";
 import "./Calendar.css";
 import ShareReminderButton from "./ShareReminderButton";
 import SharedReminders from "./SharedReminders";
@@ -31,6 +33,7 @@ import {
   ArrowUpRight,
   Flame,
   Sun,
+  Moon,
   MoreHorizontal,
   CircleCheck,
   Target,
@@ -584,6 +587,29 @@ function CalendarView({
 // ======================================================
 
 function App() {
+  // ----------------------------------------------------
+  // APPEARANCE: persistent light/dark theme
+  // ----------------------------------------------------
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem("remindme_theme");
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia?.("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    } catch {
+      return "dark";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("remindme_theme", theme);
+    } catch (error) {
+      console.warn("Unable to save appearance preference:", error);
+    }
+  }, [theme]);
+
   // ----------------------------------------------------
   // USER PROFILE
   // ----------------------------------------------------
@@ -1704,7 +1730,7 @@ const handleProfilePhotoChange = async (event) => {
   // ====================================================
 
   return (
-    <div className="app-layout">
+    <div className="app-layout" data-theme={theme}>
       {/* SIDEBAR */}
 
       <aside className="sidebar">
@@ -1921,6 +1947,16 @@ const handleProfilePhotoChange = async (event) => {
           </div>
 
           <div className="top-actions">
+            <button
+              type="button"
+              className="theme-toggle icon-button"
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+              aria-pressed={theme === "light"}
+              onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
             <button
               type="button"
               className="icon-button"
@@ -2908,6 +2944,7 @@ const handleProfilePhotoChange = async (event) => {
           </form>
         </div>
       )}
+      <InstallPrompt />
     </div>
   );
 }

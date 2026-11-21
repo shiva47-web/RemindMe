@@ -1,0 +1,96 @@
+
+.install-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.install-popup {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 30px 24px 24px;
+  text-align: center;
+  color: #fff;
+  background: #171927;
+  border: 1px solid rgba(160, 140, 255, 0.25);
+  border-radius: 22px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+}
+
+.install-close {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  border: 0;
+  background: transparent;
+  color: #aaa;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.install-logo {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 17px;
+  border-radius: 18px;
+  color: white;
+  font-size: 30px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #987cff, #6448df);
+}
+
+.install-popup h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.install-popup p {
+  margin: 0 0 22px;
+  color: #aaaec3;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.install-action {
+  width: 100%;
+  padding: 14px;
+  color: white;
+  background: linear-gradient(135deg, #987cff, #684ce5);
+  border: 0;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.install-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.install-later {
+  margin-top: 13px;
+  padding: 10px;
+  color: #aaaec3;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.ios-install-help {
+  padding: 14px;
+  color: #d8d5eb;
+  background: rgba(145, 125, 255, 0.12);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
