@@ -657,8 +657,10 @@ function App() {
     }
   };
 
-  const [profileUser, setProfileUser] = useState(getSignedInUser);
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+const [profileUser, setProfileUser] = useState(getSignedInUser);
+const [showProfileMenu, setShowProfileMenu] = useState(false);
+const [showProfileModal, setShowProfileModal] = useState(false);
+const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const profileInitial = (
     profileUser.name || "M"
@@ -683,31 +685,31 @@ function App() {
   }, []);
 
   const handleProfileAction = (action) => {
-    setShowProfileMenu(false);
+  setShowProfileMenu(false);
 
-    if (action === "settings") {
-      setActivePage("Settings");
+  if (action === "settings") {
+    setShowSettingsModal(true);
+  }
+
+  if (action === "notifications") {
+    enableNotifications();
+  }
+
+  if (action === "profile") {
+    setProfileUser(getSignedInUser());
+    setShowProfileModal(true);
+  }
+
+  if (action === "logout") {
+    const confirmed = window.confirm(
+      "Are you sure you want to log out?"
+    );
+
+    if (confirmed) {
+      window.dispatchEvent(new Event("remindme:logout"));
     }
-
-    if (action === "notifications") {
-      enableNotifications();
-    }
-
-    if (action === "profile") {
-      window.dispatchEvent(new Event("remindme:open-profile"));
-    }
-
-    if (action === "logout") {
-      const confirmed = window.confirm(
-        "Are you sure you want to log out?"
-      );
-
-      if (confirmed) {
-        // Let AuthGate handle the actual logout and token cleanup.
-        window.dispatchEvent(new Event("remindme:logout"));
-      }
-    }
-  };
+  }
+};
   // LOAD SAVED TASKS
 
   const [tasks, setTasks] = useState(() => {
@@ -2454,7 +2456,120 @@ const visibleTasks = searchableTasks.filter((task) => {
         </div>
 
       </main>
+{/* PROFILE MODAL */}
+{showProfileModal && (
+  <div
+    className="account-modal-overlay"
+    onClick={(event) => {
+      if (event.target === event.currentTarget) {
+        setShowProfileModal(false);
+      }
+    }}
+  >
+    <div className="account-modal">
+      <div className="account-modal-header">
+        <h2>My Profile</h2>
+        <button
+          type="button"
+          onClick={() => setShowProfileModal(false)}
+        >
+          ✕
+        </button>
+      </div>
 
+      <div className="account-profile-avatar">
+        {profileInitial}
+      </div>
+
+      <div className="account-profile-details">
+        <label>Name</label>
+        <p>{profileUser.name || "My Account"}</p>
+
+        <label>Email</label>
+        <p>{profileUser.email || "No email available"}</p>
+      </div>
+
+      <button
+        type="button"
+        className="account-modal-close"
+        onClick={() => setShowProfileModal(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
+
+{/* SETTINGS MODAL */}
+{showSettingsModal && (
+  <div
+    className="account-modal-overlay"
+    onClick={(event) => {
+      if (event.target === event.currentTarget) {
+        setShowSettingsModal(false);
+      }
+    }}
+  >
+    <div className="account-modal">
+      <div className="account-modal-header">
+        <h2>Settings</h2>
+        <button
+          type="button"
+          onClick={() => setShowSettingsModal(false)}
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="account-setting-item">
+        <div>
+          <strong>Browser notifications</strong>
+          <p>
+            {notificationPermission === "granted"
+              ? "Notifications are enabled."
+              : notificationPermission === "denied"
+              ? "Notifications are blocked in your browser."
+              : notificationPermission === "unsupported"
+              ? "Your browser does not support notifications."
+              : "Notifications have not been enabled yet."}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="account-modal-action"
+          onClick={enableNotifications}
+          disabled={
+            notificationPermission === "unsupported" ||
+            notificationPermission === "granted" ||
+            notificationPermission === "denied"
+          }
+        >
+          {notificationPermission === "granted"
+            ? "Enabled"
+            : notificationPermission === "denied"
+            ? "Blocked"
+            : "Enable"}
+        </button>
+      </div>
+
+      <div className="account-setting-item">
+        <div>
+          <strong>Account</strong>
+          <p>{profileUser.email || "Personal workspace"}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="account-modal-close"
+        onClick={() => setShowSettingsModal(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
       {/* CREATE / EDIT REMINDER MODAL */}
 
       {showModal && (

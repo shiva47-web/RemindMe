@@ -1483,3 +1483,140 @@ body {
   cursor: pointer;
   font-weight: 700;
 }
+/* PROFILE DROPDOWN TEXT FIX */
+.profile-dropdown {
+  color: #111111 !important;
+  background: #ffffff !important;
+}
+
+.profile-dropdown .profile-dropdown-header strong,
+.profile-dropdown .profile-dropdown-header span {
+  color: #111111 !important;
+}
+
+.profile-dropdown > button {
+  color: #111111 !important;
+}
+
+.profile-dropdown > button svg {
+  color: #333333 !important;
+}
+
+.profile-dropdown .profile-dropdown-divider {
+  border-color: #e5e5e5 !important;
+}
+
+.profile-dropdown > button.profile-logout {
+  color: #dc2626 !important;
+}
+
+/* PROFILE AND SETTINGS MODALS */
+.account-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.account-modal {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  color: #171717;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.account-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.account-modal-header h2 {
+  margin: 0;
+  color: #171717;
+}
+
+.account-modal-header button {
+  border: 0;
+  background: #eeeeee;
+  color: #171717;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.account-profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #b49aff;
+  color: #171717;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.account-profile-details label {
+  display: block;
+  color: #666666;
+  font-size: 13px;
+  margin-top: 14px;
+}
+
+.account-profile-details p {
+  color: #171717;
+  font-weight: 600;
+  margin: 5px 0 12px;
+  overflow-wrap: anywhere;
+}
+
+.account-setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.account-setting-item strong {
+  color: #171717;
+}
+
+.account-setting-item p {
+  color: #666666;
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+.account-modal-action,
+.account-modal-close {
+  border: 0;
+  border-radius: 9px;
+  padding: 11px 16px;
+  background: #a78bfa;
+  color: #171717;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-modal-action:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.account-modal-close {
+  width: 100%;
+  margin-top: 22px;
+}
