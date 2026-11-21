@@ -1954,11 +1954,7 @@ const handleProfilePhotoChange = async (event) => {
               className="top-avatar"
               title={profileUser.name}
               aria-label="Open my profile"
-              onClick={() => {
-                setShowProfileMenu(false);
-                setProfileUser(getSignedInUser());
-                setShowProfileModal(true);
-              }}
+              onClick={() => handleProfileAction("profile")}
               style={{
                 width: 42,
                 height: 42,
