@@ -27,7 +27,7 @@ router = APIRouter(tags=["Remy AI Assistant"])
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-AI_MODEL = "llama-3.3-70b-versatile"
+AI_MODEL = "openai/gpt-oss-120b"
 
 MAX_HISTORY_MESSAGES = 8
 
