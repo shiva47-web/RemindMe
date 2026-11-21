@@ -1,4 +1,14 @@
+
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 * {
   margin: 0;
@@ -6,19 +16,47 @@
   box-sizing: border-box;
 }
 
+html {
+  min-width: 320px;
+  min-height: 100%;
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
 body {
+  min-width: 320px;
+  min-height: 100vh;
   font-family: 'DM Sans', sans-serif;
   background: #101116;
   color: #f4f2f7;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
 button {
-  font-family: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
   outline: 2px solid #b59aff;
   outline-offset: 3px;
 }
@@ -26,4 +64,315 @@ input:focus-visible {
 ::selection {
   background: #9a7cf5;
   color: white;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+/* =========================================
+   SIDEBAR SCROLLING
+   ========================================= */
+
+.sidebar {
+  position: sticky !important;
+  top: 0;
+  height: 100vh !important;
+  height: 100dvh !important;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #55476e transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #55476e;
+  border-radius: 20px;
+}
+
+/* =========================================
+   REMINDME PUSH NOTIFICATION BELL
+   ========================================= */
+
+.push-widget {
+  position: fixed;
+  right: 22px;
+  bottom: 24px;
+  z-index: 1800;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.push-widget button,
+.push-panel {
+  pointer-events: auto;
+}
+
+.push-bell-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(198, 174, 255, 0.35);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #b69aff, #9273dc);
+  color: #21182f;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.push-bell-button:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.08);
+  box-shadow: 0 12px 30px rgba(150, 116, 220, 0.3);
+}
+
+.push-bell-button:active {
+  transform: scale(0.96);
+}
+
+.push-bell-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #21182f;
+  border-radius: 50%;
+  background: #ff9eaa;
+}
+
+/* =========================================
+   NOTIFICATION PANEL
+   ========================================= */
+
+.push-panel {
+  width: 330px;
+  max-width: calc(100vw - 28px);
+  padding: 18px;
+  border: 1px solid rgba(198, 174, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(29, 27, 41, 0.97);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: push-panel-enter 0.18s ease-out;
+}
+
+@keyframes push-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.push-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 17px;
+}
+
+.push-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.push-panel-icon {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(182, 154, 255, 0.15);
+  color: #c9b4ff;
+}
+
+.push-panel-title h3 {
+  color: #f7f3ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.push-panel-title p {
+  margin-top: 3px;
+  color: #a8a1b8;
+  font-size: 11px;
+}
+
+.push-close-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
+  background: transparent;
+  color: #aaa2bb;
+}
+
+.push-close-button:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+}
+
+.push-status-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+  color: #d4cce2;
+  font-size: 12px;
+}
+
+.push-status-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #e9b56f;
+}
+
+.push-status-dot.is-enabled {
+  background: #83d6a6;
+  box-shadow: 0 0 10px rgba(131, 214, 166, 0.35);
+}
+
+.push-description {
+  margin-bottom: 16px;
+  color: #aaa4b7;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.push-enable-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 11px;
+  background: linear-gradient(110deg, #c4aaff, #a88df0);
+  color: #241b35;
+  font-size: 12px;
+  font-weight: 700;
+  transition: filter 0.2s ease;
+}
+
+.push-enable-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.push-enable-button:disabled {
+  opacity: 0.65;
+}
+
+.push-message {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.push-message.is-success {
+  color: #a7e3b5;
+}
+
+.push-message.is-error {
+  color: #ff9da8;
+}
+
+.push-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(36, 27, 53, 0.25);
+  border-top-color: #241b35;
+  border-radius: 50%;
+  animation: push-spin 0.7s linear infinite;
+}
+
+@keyframes push-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================
+   TABLET
+   ========================================= */
+
+@media (max-width: 900px) {
+  .push-widget {
+    right: 16px;
+    bottom: 18px;
+  }
+}
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 600px) {
+  .push-widget {
+    right: 14px;
+    bottom: 16px;
+    gap: 10px;
+  }
+
+  .push-bell-button {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .push-panel {
+    width: min(340px, calc(100vw - 28px));
+    padding: 16px;
+    border-radius: 16px;
+  }
+}
+
+/* =========================================
+   ACCESSIBILITY
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
