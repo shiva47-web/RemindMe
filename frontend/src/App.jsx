@@ -10,6 +10,7 @@ import SharedReminders from "./SharedReminders";
 import "./SmartFilters.css";
 import "./ReminderTemplates.css";
 import { API_BASE } from "./config";
+
 import {
   LayoutDashboard,
   CalendarDays,
@@ -24,6 +25,8 @@ import {
   BriefcaseBusiness,
   House,
   UserRound,
+  User,
+  LogOut,
   ArrowUpRight,
   Flame,
   Sun,
@@ -37,6 +40,7 @@ import {
   Pencil,
   CalendarCheck,
 } from "lucide-react";
+
 
 import "./App.css";
 import "./Calendar.css";
