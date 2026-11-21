@@ -1948,39 +1948,19 @@ const handleProfilePhotoChange = async (event) => {
               )}
             </button>
 
-            {/* Top avatar opens the profile. Keep the photo inside this button. */}
+            {/* Single top-right profile avatar */}
             <button
               type="button"
               className="top-avatar"
               title={profileUser.name}
               aria-label="Open my profile"
               onClick={() => handleProfileAction("profile")}
-              style={{
-                width: 42,
-                height: 42,
-                minWidth: 42,
-                padding: 0,
-                borderRadius: "50%",
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                position: "relative",
-              }}
             >
               {profileUser.avatar_url ? (
                 <img
                   src={profileUser.avatar_url}
                   alt="Profile"
                   className="top-avatar-image"
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: "50%",
-                  }}
                 />
               ) : (
                 profileInitial
