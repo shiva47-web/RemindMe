@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useRef, useState } from "react";
 
 import {
   ArrowRight,
@@ -8,6 +9,14 @@ import {
   EyeOff,
   ShieldCheck,
   Sparkles,
+  MoreVertical,
+  UserRound,
+  Settings,
+  Bell,
+  LogOut,
+  X,
+  Mail,
+  Check,
 } from "lucide-react";
 
 import "./AuthGate.css";
@@ -15,13 +24,11 @@ import "./AuthGate.css";
 const API_URL = "https://remindme-api-6sfw.onrender.com";
 const TOKEN_KEY = "remindme_access_token";
 const USER_KEY = "remindme_user";
+const NOTIFICATION_PREF_KEY = "remindme_notification_preferences";
 
 function safeArray(key) {
   try {
-    const value = JSON.parse(
-      localStorage.getItem(key) || "[]"
-    );
-
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
     return Array.isArray(value) ? value : [];
   } catch {
     return [];
@@ -51,26 +58,18 @@ async function readResponse(response) {
     );
 
     error.status = response.status;
-
     throw error;
   }
 
   return data;
 }
 
-
-// LOAD ACCOUNT REMINDERS FROM POSTGRESQL
-
 async function loadAccountWorkspace(user, token) {
-
-  const response = await fetch(
-    `${API_URL}/api/reminders`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await fetch(`${API_URL}/api/reminders`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   const result = await readResponse(response);
 
@@ -80,37 +79,19 @@ async function loadAccountWorkspace(user, token) {
 
   const keys = accountKeys(user.id);
 
-  // Save reminders separately for each account.
-
-  localStorage.setItem(
-    keys.tasks,
-    JSON.stringify(reminders)
-  );
-
-  // Load reminders into the existing dashboard.
-
-  localStorage.setItem(
-    "remindme_tasks",
-    JSON.stringify(reminders)
-  );
-
-  // Keep notification history separate per user.
+  localStorage.setItem(keys.tasks, JSON.stringify(reminders));
+  localStorage.setItem("remindme_tasks", JSON.stringify(reminders));
 
   if (localStorage.getItem(keys.notified) === null) {
-
     const oldIds =
       String(user.id) === "1"
         ? safeArray("remindme_notified_ids")
         : [];
 
-    localStorage.setItem(
-      keys.notified,
-      JSON.stringify(oldIds)
-    );
+    localStorage.setItem(keys.notified, JSON.stringify(oldIds));
   }
 
   if (localStorage.getItem(keys.occurrences) === null) {
-
     const oldOccurrences =
       String(user.id) === "1"
         ? safeArray("remindme_notified_occurrences")
@@ -132,17 +113,10 @@ async function loadAccountWorkspace(user, token) {
     localStorage.getItem(keys.occurrences) || "[]"
   );
 
-  localStorage.setItem(
-    USER_KEY,
-    JSON.stringify(user)
-  );
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
-
-// SAVE CURRENT ACCOUNT CACHE
-
 function saveCurrentAccountCache(user) {
-
   if (!user?.id) return;
 
   const keys = accountKeys(user.id);
@@ -159,42 +133,78 @@ function saveCurrentAccountCache(user) {
 
   localStorage.setItem(
     keys.occurrences,
-    JSON.stringify(
-      safeArray("remindme_notified_occurrences")
-    )
+    JSON.stringify(safeArray("remindme_notified_occurrences"))
   );
 }
 
+function getInitialNotificationPreferences() {
+  try {
+    const saved = JSON.parse(
+      localStorage.getItem(NOTIFICATION_PREF_KEY) || "{}"
+    );
+
+    return {
+      browserNotifications: saved.browserNotifications ?? false,
+      reminderAlerts: saved.reminderAlerts ?? true,
+    };
+  } catch {
+    return {
+      browserNotifications: false,
+      reminderAlerts: true,
+    };
+  }
+}
 
 export default function AuthGate({ children }) {
-
   const [currentUser, setCurrentUser] = useState(null);
-
   const [checkingSession, setCheckingSession] = useState(true);
-
   const [mode, setMode] = useState("login");
-
   const [fullName, setFullName] = useState("");
-
   const [email, setEmail] = useState("");
-
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [loading, setLoading] = useState(false);
-
   const [error, setError] = useState("");
 
+  // Profile menu and account panels
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState("");
+  const menuRef = useRef(null);
 
-  // RESTORE LOGIN SESSION
+  // Notification preferences
+  const [notificationPreferences, setNotificationPreferences] =
+    useState(getInitialNotificationPreferences);
 
   useEffect(() => {
+    localStorage.setItem(
+      NOTIFICATION_PREF_KEY,
+      JSON.stringify(notificationPreferences)
+    );
+  }, [notificationPreferences]);
 
+  // Close the three-dot menu when clicking outside it
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
+
+  // RESTORE LOGIN SESSION
+  useEffect(() => {
     let active = true;
 
     async function restoreSession() {
-
       const token = localStorage.getItem(TOKEN_KEY);
 
       if (!token) {
@@ -203,15 +213,11 @@ export default function AuthGate({ children }) {
       }
 
       try {
-
-        const response = await fetch(
-          `${API_URL}/api/auth/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const result = await readResponse(response);
 
@@ -220,11 +226,8 @@ export default function AuthGate({ children }) {
         if (active) {
           setCurrentUser(result.user);
         }
-
       } catch (err) {
-
         if (err.status === 401) {
-
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem(USER_KEY);
 
@@ -233,16 +236,12 @@ export default function AuthGate({ children }) {
               "Your session expired. Please sign in again."
             );
           }
-
         } else if (active) {
-
           setError(
             `Could not load your workspace: ${err.message}`
           );
         }
-
       } finally {
-
         if (active) {
           setCheckingSession(false);
         }
@@ -254,26 +253,16 @@ export default function AuthGate({ children }) {
     return () => {
       active = false;
     };
-
   }, []);
 
-
   // LOGIN AND REGISTRATION
-
   async function handleSubmit(event) {
-
     event.preventDefault();
-
     setError("");
-
     setLoading(true);
 
     try {
-
-      const endpoint =
-        mode === "login"
-          ? "login"
-          : "register";
+      const endpoint = mode === "login" ? "login" : "register";
 
       const body =
         mode === "login"
@@ -291,33 +280,23 @@ export default function AuthGate({ children }) {
         `${API_URL}/api/auth/${endpoint}`,
         {
           method: "POST",
-
           headers: {
             "Content-Type": "application/json",
           },
-
           body: JSON.stringify(body),
         }
       );
 
       const result = await readResponse(response);
 
-      localStorage.setItem(
-        TOKEN_KEY,
-        result.access_token
-      );
-
-      // Retrieve this user's database reminders.
+      localStorage.setItem(TOKEN_KEY, result.access_token);
 
       try {
-
         await loadAccountWorkspace(
           result.user,
           result.access_token
         );
-
       } catch (workspaceError) {
-
         localStorage.removeItem(TOKEN_KEY);
 
         throw new Error(
@@ -326,54 +305,78 @@ export default function AuthGate({ children }) {
       }
 
       setCurrentUser(result.user);
-
       setPassword("");
-
     } catch (err) {
-
       setError(
         err.message || "Unable to continue. Please try again."
       );
-
     } finally {
-
       setLoading(false);
     }
   }
 
-
-  // LOGOUT
-
+  // LOGOUT - EXISTING FUNCTIONALITY PRESERVED
   function handleLogout() {
-
     saveCurrentAccountCache(currentUser);
 
     localStorage.removeItem(TOKEN_KEY);
-
     localStorage.removeItem(USER_KEY);
-
     localStorage.removeItem("remindme_tasks");
-
     localStorage.removeItem("remindme_notified_ids");
-
-    localStorage.removeItem(
-      "remindme_notified_occurrences"
-    );
+    localStorage.removeItem("remindme_notified_occurrences");
 
     setCurrentUser(null);
-
     setPassword("");
-
     setError("");
-
     setMode("login");
+    setMenuOpen(false);
+    setActivePanel("");
   }
 
+  function openPanel(panel) {
+    setMenuOpen(false);
+    setActivePanel(panel);
+  }
+
+  async function toggleBrowserNotifications() {
+    if (notificationPreferences.browserNotifications) {
+      setNotificationPreferences((previous) => ({
+        ...previous,
+        browserNotifications: false,
+      }));
+      return;
+    }
+
+    if (!("Notification" in window)) {
+      alert("Your browser does not support notifications.");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+
+      if (permission === "granted") {
+        setNotificationPreferences((previous) => ({
+          ...previous,
+          browserNotifications: true,
+        }));
+      } else {
+        setNotificationPreferences((previous) => ({
+          ...previous,
+          browserNotifications: false,
+        }));
+
+        alert(
+          "Notification permission was not granted. You can enable it in your browser settings."
+        );
+      }
+    } catch {
+      alert("Could not enable browser notifications.");
+    }
+  }
 
   // LOADING SCREEN
-
   if (checkingSession) {
-
     return (
       <div className="auth-loading">
         <Clock size={30} />
@@ -382,57 +385,311 @@ export default function AuthGate({ children }) {
     );
   }
 
-
   // AUTHENTICATED DASHBOARD
-
   if (currentUser) {
+    const displayName =
+      currentUser.full_name ||
+      currentUser.name ||
+      currentUser.username ||
+      "User";
+
+    const displayEmail = currentUser.email || "Email unavailable";
+
+    const avatarLetter = displayName
+      .charAt(0)
+      .toUpperCase();
 
     return (
       <div className="authenticated-shell">
-
         <div className="auth-session-bar">
-
           <div className="auth-session-user">
-
             <div className="auth-avatar">
-              {(currentUser.full_name || "U")
-                .charAt(0)
-                .toUpperCase()}
+              {avatarLetter}
             </div>
 
-            <div>
-              <strong>{currentUser.full_name}</strong>
-              <span>{currentUser.email}</span>
+            <div className="auth-session-user-info">
+              <strong>{displayName}</strong>
+              <span>{displayEmail}</span>
             </div>
-
           </div>
 
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="auth-logout-button"
-          >
-            Log out
-          </button>
+          <div className="auth-profile-menu" ref={menuRef}>
+            <button
+              type="button"
+              className="auth-menu-trigger"
+              onClick={() => setMenuOpen((value) => !value)}
+              aria-label="Open account menu"
+              aria-expanded={menuOpen}
+              title="Account menu"
+            >
+              <MoreVertical size={22} />
+            </button>
 
+            {menuOpen && (
+              <div className="auth-dropdown-menu">
+                <div className="auth-dropdown-heading">
+                  <strong>{displayName}</strong>
+                  <span>{displayEmail}</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => openPanel("profile")}
+                >
+                  <UserRound size={17} />
+                  <span>View Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openPanel("settings")}
+                >
+                  <Settings size={17} />
+                  <span>Account Settings</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => openPanel("notifications")}
+                >
+                  <Bell size={17} />
+                  <span>Notification Preferences</span>
+                </button>
+
+                <div className="auth-dropdown-divider" />
+
+                <button
+                  type="button"
+                  className="auth-dropdown-logout"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={17} />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {children}
 
+        {/* ACCOUNT PANELS */}
+        {activePanel && (
+          <div
+            className="auth-panel-overlay"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) {
+                setActivePanel("");
+              }
+            }}
+          >
+            <section
+              className="auth-account-panel"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="auth-panel-title"
+            >
+              <div className="auth-panel-header">
+                <div>
+                  <span className="auth-panel-eyebrow">
+                    REMINDME ACCOUNT
+                  </span>
+
+                  <h2 id="auth-panel-title">
+                    {activePanel === "profile"
+                      ? "Your Profile"
+                      : activePanel === "settings"
+                        ? "Account Settings"
+                        : "Notification Preferences"}
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  className="auth-panel-close"
+                  onClick={() => setActivePanel("")}
+                  aria-label="Close panel"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {activePanel === "profile" && (
+                <div className="auth-profile-content">
+                  <div className="auth-profile-large-avatar">
+                    {avatarLetter}
+                  </div>
+
+                  <h3>{displayName}</h3>
+                  <p className="auth-profile-subtitle">
+                    Your personal RemindMe account
+                  </p>
+
+                  <div className="auth-profile-detail">
+                    <UserRound size={19} />
+                    <div>
+                      <span>Full name</span>
+                      <strong>{displayName}</strong>
+                    </div>
+                  </div>
+
+                  <div className="auth-profile-detail">
+                    <Mail size={19} />
+                    <div>
+                      <span>Email address</span>
+                      <strong>{displayEmail}</strong>
+                    </div>
+                  </div>
+
+                  <div className="auth-profile-detail">
+                    <ShieldCheck size={19} />
+                    <div>
+                      <span>Account status</span>
+                      <strong>Signed in</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activePanel === "settings" && (
+                <div className="auth-settings-content">
+                  <div className="auth-settings-intro">
+                    <Settings size={22} />
+                    <div>
+                      <strong>Your account information</strong>
+                      <p>
+                        These details are currently provided by your
+                        RemindMe account.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="auth-settings-field">
+                    <label>Full name</label>
+                    <input
+                      type="text"
+                      value={displayName}
+                      readOnly
+                    />
+                  </div>
+
+                  <div className="auth-settings-field">
+                    <label>Email address</label>
+                    <input
+                      type="email"
+                      value={displayEmail}
+                      readOnly
+                    />
+                  </div>
+
+                  <p className="auth-settings-note">
+                    Profile editing is not connected to your backend
+                    yet. Your existing account details are unchanged.
+                  </p>
+                </div>
+              )}
+
+              {activePanel === "notifications" && (
+                <div className="auth-notification-content">
+                  <div className="auth-notification-option">
+                    <div className="auth-notification-option-info">
+                      <div className="auth-option-icon">
+                        <Bell size={19} />
+                      </div>
+
+                      <div>
+                        <strong>Browser notifications</strong>
+                        <p>
+                          Allow RemindMe to send browser notifications.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`auth-toggle ${
+                        notificationPreferences.browserNotifications
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={toggleBrowserNotifications}
+                      role="switch"
+                      aria-checked={
+                        notificationPreferences.browserNotifications
+                      }
+                      aria-label="Toggle browser notifications"
+                    >
+                      <span />
+                    </button>
+                  </div>
+
+                  <div className="auth-notification-option">
+                    <div className="auth-notification-option-info">
+                      <div className="auth-option-icon">
+                        <Clock size={19} />
+                      </div>
+
+                      <div>
+                        <strong>Reminder alerts</strong>
+                        <p>
+                          Keep reminder alerts enabled in your
+                          preferences.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className={`auth-toggle ${
+                        notificationPreferences.reminderAlerts
+                          ? "active"
+                          : ""
+                      }`}
+                      onClick={() =>
+                        setNotificationPreferences((previous) => ({
+                          ...previous,
+                          reminderAlerts: !previous.reminderAlerts,
+                        }))
+                      }
+                      role="switch"
+                      aria-checked={
+                        notificationPreferences.reminderAlerts
+                      }
+                      aria-label="Toggle reminder alerts"
+                    >
+                      <span />
+                    </button>
+                  </div>
+
+                  <p className="auth-settings-note">
+                    Your preferences are saved in this browser.
+                    Browser permission is also controlled by your
+                    browser settings.
+                  </p>
+                </div>
+              )}
+
+              <div className="auth-panel-footer">
+                <button
+                  type="button"
+                  onClick={() => setActivePanel("")}
+                >
+                  <Check size={17} />
+                  Done
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </div>
     );
   }
 
-
   // LOGIN / REGISTRATION PAGE
-
   return (
     <main className="auth-page">
-
       <section className="auth-brand-panel">
-
         <div className="auth-brand">
-
           <div className="auth-brand-icon">
             <Clock size={23} />
           </div>
@@ -440,12 +697,9 @@ export default function AuthGate({ children }) {
           <span>
             Remind<span className="brand-highlight">Me.</span>
           </span>
-
         </div>
 
-
         <div className="auth-brand-content">
-
           <div className="auth-eyebrow">
             <Sparkles size={16} />
             A LITTLE MORE CLARITY, EVERY DAY
@@ -471,31 +725,23 @@ export default function AuthGate({ children }) {
             <ShieldCheck size={19} />
             Your own personal workspace.
           </div>
-
         </div>
 
         <div className="auth-brand-footer">
           REMEMBER LESS. LIVE MORE.
         </div>
-
       </section>
 
-
       <section className="auth-form-panel">
-
         <div className="auth-form-container">
-
           <div className="auth-mobile-brand">
             <Clock size={22} />
             RemindMe.
           </div>
 
           <div className="auth-form-heading">
-
             <span>
-              {mode === "login"
-                ? "WELCOME BACK"
-                : "GET STARTED"}
+              {mode === "login" ? "WELCOME BACK" : "GET STARTED"}
             </span>
 
             <h2>
@@ -509,22 +755,12 @@ export default function AuthGate({ children }) {
                 ? "Sign in to see what's on your mind today."
                 : "Your more organized days start here."}
             </p>
-
           </div>
 
-
-          <form
-            className="auth-form"
-            onSubmit={handleSubmit}
-          >
-
+          <form className="auth-form" onSubmit={handleSubmit}>
             {mode === "register" && (
-
               <div className="auth-field">
-
-                <label htmlFor="auth-full-name">
-                  Your name
-                </label>
+                <label htmlFor="auth-full-name">Your name</label>
 
                 <input
                   id="auth-full-name"
@@ -538,16 +774,11 @@ export default function AuthGate({ children }) {
                   autoComplete="name"
                   required
                 />
-
               </div>
             )}
 
-
             <div className="auth-field">
-
-              <label htmlFor="auth-email">
-                Email address
-              </label>
+              <label htmlFor="auth-email">Email address</label>
 
               <input
                 id="auth-email"
@@ -560,18 +791,12 @@ export default function AuthGate({ children }) {
                 autoComplete="email"
                 required
               />
-
             </div>
 
-
             <div className="auth-field">
-
-              <label htmlFor="auth-password">
-                Password
-              </label>
+              <label htmlFor="auth-password">Password</label>
 
               <div className="auth-password-wrapper">
-
                 <input
                   id="auth-password"
                   type={showPassword ? "text" : "password"}
@@ -600,27 +825,23 @@ export default function AuthGate({ children }) {
                     setShowPassword((value) => !value)
                   }
                   aria-label={
-                    showPassword
-                      ? "Hide password"
-                      : "Show password"
+                    showPassword ? "Hide password" : "Show password"
                   }
                 >
-                  {showPassword
-                    ? <EyeOff size={18} />
-                    : <Eye size={18} />}
+                  {showPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
                 </button>
-
               </div>
-
             </div>
-
 
             {error && (
               <div className="auth-error" role="alert">
                 {error}
               </div>
             )}
-
 
             <button
               className="auth-submit-button"
@@ -634,14 +855,10 @@ export default function AuthGate({ children }) {
                   : "Create my account"}
 
               {!loading && <ArrowRight size={18} />}
-
             </button>
-
           </form>
 
-
           <div className="auth-mode-switch">
-
             <span>
               {mode === "login"
                 ? "New around here?"
@@ -652,9 +869,7 @@ export default function AuthGate({ children }) {
               type="button"
               onClick={() => {
                 setMode(
-                  mode === "login"
-                    ? "register"
-                    : "login"
+                  mode === "login" ? "register" : "login"
                 );
 
                 setError("");
@@ -665,19 +880,14 @@ export default function AuthGate({ children }) {
                 ? "Create an account"
                 : "Sign in instead"}
             </button>
-
           </div>
-
 
           <div className="auth-security-note">
             <ShieldCheck size={15} />
             Your reminders stay in your personal account.
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }
